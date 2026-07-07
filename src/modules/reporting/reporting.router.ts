@@ -1,0 +1,12 @@
+import { router, protectedProcedure, requirePermission } from "@/api/trpc";
+import { reportingService } from "./reporting.service";
+
+/** tRPC router reportingu (read-only agregace). dashboard vrátí sadu widgetů najednou. */
+export const reportingRouter = router({
+  dashboard: protectedProcedure.use(requirePermission("reporting", "read")).query(({ ctx }) => reportingService.dashboard(ctx)),
+  pipelineValue: protectedProcedure.use(requirePermission("reporting", "read")).query(() => reportingService.pipelineValue()),
+  winRate: protectedProcedure.use(requirePermission("reporting", "read")).query(() => reportingService.winRate()),
+  projectsStatus: protectedProcedure.use(requirePermission("reporting", "read")).query(() => reportingService.projectsStatus()),
+  openTickets: protectedProcedure.use(requirePermission("reporting", "read")).query(() => reportingService.openTickets()),
+  revenuePerClient: protectedProcedure.use(requirePermission("reporting", "read")).query(() => reportingService.revenuePerClient()),
+});

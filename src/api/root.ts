@@ -7,6 +7,7 @@ import { projectsRouter } from "@/modules/projects";
 import { activitiesRouter } from "@/modules/activities";
 import { tasksRouter } from "@/modules/tasks";
 import { documentsRouter } from "@/modules/documents";
+import { reportingRouter } from "@/modules/reporting";
 
 // zaregistruje event subscribery (W2: deal.won → projekt) jednou při načtení
 bootstrap();
@@ -33,8 +34,9 @@ export const appRouter = router({
   activities: activitiesRouter,
   tasks: tasksRouter,
   documents: documentsRouter,
+  reporting: reportingRouter,
 
-  // Fáze 1 pokr.: reporting, security, integrations
+  // Fáze 1 pokr.: security, integrations, CSV import
 });
 
 export type AppRouter = typeof appRouter;
