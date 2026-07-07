@@ -1,4 +1,5 @@
 import { initTRPC, TRPCError } from "@trpc/server";
+import superjson from "superjson";
 import { runWithTenant } from "@/shared/tenant-context";
 import { can, type Module } from "@/domain/policies/permission.policy";
 import type { PermissionLevel } from "@/domain/enums";
@@ -6,9 +7,9 @@ import type { Context } from "./context";
 
 /**
  * tRPC init + procedury. Middleware řetěz: auth (protectedProcedure) → tenant-context → permission → audit.
- * Interní UI volá tRPC; externí nástroje jdou přes REST fasádu (src/api/rest).
+ * superjson transformer řeší bigint (částky) a Date. Klient musí použít stejný transformer (ui/providers).
  */
-const t = initTRPC.context<Context>().create();
+const t = initTRPC.context<Context>().create({ transformer: superjson });
 
 export const router = t.router;
 export const publicProcedure = t.procedure;
