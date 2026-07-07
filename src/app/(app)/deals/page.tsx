@@ -8,7 +8,7 @@ export default function DealsPage() {
   const stages = trpc.deals.stages.useQuery();
   const deals = trpc.deals.list.useQuery(undefined);
 
-  if (stages.error || deals.error) return <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">Chyba: {(stages.error ?? deals.error)?.message}</div>;
+  if (stages.error || deals.error) return <div className="rounded-2xl border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-300">Chyba: {(stages.error ?? deals.error)?.message}</div>;
   if (stages.isLoading || deals.isLoading || !stages.data || !deals.data) return <Loading />;
 
   const open = stages.data.filter((s) => s.kind === "open");
@@ -21,22 +21,22 @@ export default function DealsPage() {
         const items = byStage(s.id);
         const sum = items.reduce((a, d) => a + Number(d.amountMinor ?? 0), 0);
         return (
-          <div key={s.id} className="flex w-72 shrink-0 flex-col rounded-xl bg-slate-100/70 p-2">
+          <div key={s.id} className="flex w-72 shrink-0 flex-col rounded-2xl border border-line bg-surface/50 p-2.5">
             <div className="flex items-center justify-between px-2 py-1.5">
-              <span className="text-sm font-semibold text-slate-700">{s.name}</span>
-              <span className="text-xs text-slate-400">{items.length} · {money(sum)}</span>
+              <span className="text-sm font-semibold text-ink">{s.name}</span>
+              <span className="text-xs text-faint">{items.length} · {money(sum)}</span>
             </div>
             <div className="space-y-2">
               {items.map((d) => (
-                <div key={d.id} className="cursor-pointer rounded-lg border border-slate-200 bg-white p-3 shadow-sm hover:shadow-md">
-                  <div className="text-sm font-medium text-slate-800">{d.title}</div>
-                  <div className="mt-1 flex items-center justify-between text-xs text-slate-400">
+                <div key={d.id} className="cursor-pointer rounded-xl border border-line bg-surface p-3 transition-colors hover:border-accent/40">
+                  <div className="text-sm font-medium text-ink">{d.title}</div>
+                  <div className="mt-1.5 flex items-center justify-between text-xs text-faint">
                     <span>{d.amountMinor != null ? money(d.amountMinor, d.currency ?? "Kč") : "—"}</span>
                     <span>{d.probability}%</span>
                   </div>
                 </div>
               ))}
-              {items.length === 0 && <div className="px-2 py-4 text-center text-xs text-slate-300">prázdné</div>}
+              {items.length === 0 && <div className="px-2 py-4 text-center text-xs text-faint/60">prázdné</div>}
             </div>
           </div>
         );

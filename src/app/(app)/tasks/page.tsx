@@ -26,28 +26,28 @@ export default function TasksPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
-      <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1">
+      <div className="inline-flex rounded-xl border border-line bg-surface p-1">
         {TABS.map((t) => (
           <button key={t.key} onClick={() => setView(t.key)}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${view === t.key ? "bg-accent-600 text-white" : "text-slate-500 hover:text-slate-800"}`}>
+            className={`rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors ${view === t.key ? "bg-accent-strong text-[#08110c]" : "text-muted hover:text-ink"}`}>
             {t.label}
           </button>
         ))}
       </div>
 
-      {error ? <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">Chyba: {error.message}</div>
+      {error ? <div className="rounded-2xl border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-300">Chyba: {error.message}</div>
         : isLoading || !data ? <Loading />
         : data.items.length === 0 ? <Empty>Žádné úkoly v tomto pohledu 🎉</Empty>
         : (
           <Card className="overflow-hidden p-0">
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-line">
               {data.items.map((t) => {
                 const st = STATUS[t.status];
                 return (
-                  <li key={t.id} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-slate-50">
+                  <li key={t.id} className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-white/5">
                     <div className="min-w-0">
-                      <div className="truncate text-sm font-medium text-slate-800">{t.title}</div>
-                      <div className="mt-0.5 flex items-center gap-2 text-xs text-slate-400">
+                      <div className="truncate text-sm font-medium text-ink">{t.title}</div>
+                      <div className="mt-0.5 flex items-center gap-2 text-xs text-faint">
                         {t.type === "support" && <Badge tone="blue">ticket</Badge>}
                         <span className="uppercase">{t.priority}</span>
                         {t.dueAt && <span>· do {new Date(t.dueAt).toLocaleDateString("cs-CZ")}</span>}

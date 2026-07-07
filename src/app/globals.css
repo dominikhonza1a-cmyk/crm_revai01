@@ -1,17 +1,25 @@
 @import "tailwindcss";
 
-/* Design tokens — světlý motiv, emerald akcent. */
+/* Design tokens — tmavý motiv, mint/emerald akcent (inspirace referencí). */
 @theme {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --color-accent-50: #ecfdf5;
-  --color-accent-100: #d1fae5;
-  --color-accent-500: #10b981;
-  --color-accent-600: #059669;
-  --color-accent-700: #047857;
+
+  --color-bg: #0e1420;          /* pozadí aplikace */
+  --color-surface: #182131;     /* karty */
+  --color-surface-2: #212c40;   /* hover, inputy */
+  --color-line: #283248;        /* linky/okraje */
+  --color-ink: #e7ecf3;         /* hlavní text */
+  --color-muted: #8b94a7;       /* sekundární text */
+  --color-faint: #5b6577;       /* terciární text */
+
+  --color-accent: #34d399;      /* mint/emerald */
+  --color-accent-strong: #10b981;
+  --color-accent-soft: rgba(52, 211, 153, 0.12);
 }
 
 html, body { height: 100%; }
-body { background-color: #f8fafc; color: #1f2937; }
+body { background-color: var(--color-bg); color: var(--color-ink); }
 
-/* jemný scrollbar */
-* { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+* { scrollbar-width: thin; scrollbar-color: #2a3446 transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #2a3446; border-radius: 8px; }

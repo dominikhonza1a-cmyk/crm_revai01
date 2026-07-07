@@ -23,6 +23,8 @@ function Icon({ name, className = "" }: { name: string; className?: string }) {
     check: <><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></>,
     gear: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></>,
     menu: <><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></>,
+    plus: <><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></>,
+    logout: <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></>,
   };
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} width="20" height="20">{p[name]}</svg>;
 }
@@ -49,31 +51,31 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
   async function logout() { await supabase.auth.signOut(); router.replace("/login"); }
 
-  if (!ready) return <div className="grid h-screen place-items-center text-gray-400">Načítám…</div>;
+  if (!ready) return <div className="grid h-screen place-items-center text-faint">Načítám…</div>;
 
   const title = NAV.find((n) => pathname?.startsWith(n.href))?.label ?? "revai CRM";
 
   return (
-    <div className="flex h-screen bg-slate-50">
+    <div className="flex h-screen bg-bg">
       {/* Sidebar */}
-      <aside className={`${collapsed ? "w-16" : "w-60"} flex flex-col border-r border-slate-200 bg-white transition-all duration-200`}>
-        <div className="flex h-14 items-center gap-2 px-4">
-          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-accent-600 font-bold text-white">r</div>
-          {!collapsed && <span className="font-semibold tracking-tight text-slate-800">revai CRM</span>}
+      <aside className={`${collapsed ? "w-16" : "w-60"} flex flex-col border-r border-line bg-surface transition-all duration-200`}>
+        <div className="flex h-16 items-center gap-2.5 px-4">
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent-strong font-bold text-[#08110c]">r</div>
+          {!collapsed && <span className="font-semibold tracking-tight text-ink">revai CRM</span>}
         </div>
-        <nav className="flex-1 space-y-1 px-2 py-2">
+        <nav className="flex-1 space-y-1 px-2.5 py-2">
           {NAV.map((n) => {
             const active = pathname?.startsWith(n.href);
             return (
               <Link key={n.href} href={n.href} title={n.label}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${active ? "bg-accent-50 text-accent-700" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"}`}>
-                <Icon name={n.icon} className={active ? "text-accent-600" : "text-slate-400"} />
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${active ? "bg-accent-soft text-accent" : "text-muted hover:bg-white/5 hover:text-ink"}`}>
+                <Icon name={n.icon} className={active ? "text-accent" : "text-faint"} />
                 {!collapsed && <span>{n.label}</span>}
               </Link>
             );
           })}
         </nav>
-        <button onClick={toggle} className="m-2 flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-400 hover:bg-slate-100 hover:text-slate-600" title="Sbalit / rozbalit">
+        <button onClick={toggle} className="m-2.5 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-faint hover:bg-white/5 hover:text-muted" title="Sbalit / rozbalit">
           <Icon name="menu" />
           {!collapsed && <span>Sbalit</span>}
         </button>
@@ -81,13 +83,17 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Main */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6">
-          <h1 className="text-base font-semibold text-slate-800">{title}</h1>
-          <div className="flex items-center gap-3">
-            <button className="rounded-lg bg-accent-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-accent-700">+ Nový</button>
-            <div className="flex items-center gap-2 text-sm text-slate-500">
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-line bg-surface/60 px-6">
+          <h1 className="text-lg font-semibold text-ink">{title}</h1>
+          <div className="flex items-center gap-4">
+            <button className="flex items-center gap-1.5 rounded-xl bg-accent-strong px-3.5 py-2 text-sm font-semibold text-[#08110c] transition-colors hover:brightness-110">
+              <Icon name="plus" className="h-4 w-4" /> Nový
+            </button>
+            <div className="flex items-center gap-3 text-sm text-muted">
               <span className="hidden sm:inline">{email}</span>
-              <button onClick={logout} className="rounded-lg px-2 py-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">Odhlásit</button>
+              <button onClick={logout} className="grid h-9 w-9 place-items-center rounded-xl text-faint hover:bg-white/5 hover:text-ink" title="Odhlásit">
+                <Icon name="logout" />
+              </button>
             </div>
           </div>
         </header>

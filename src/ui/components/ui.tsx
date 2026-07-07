@@ -1,39 +1,72 @@
 import type { ReactNode } from "react";
 
-/** Znovupoužitelné UI prvky — minimalistické, světlý motiv, emerald akcent. */
+/** Znovupoužitelné UI prvky — tmavý motiv, mint/emerald akcent. */
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-xl border border-slate-200 bg-white p-5 shadow-sm ${className}`}>{children}</div>;
+  return <div className={`rounded-2xl border border-line bg-surface p-5 ${className}`}>{children}</div>;
 }
 
-export function StatCard({ label, value, hint, accent }: { label: string; value: ReactNode; hint?: string; accent?: boolean }) {
+export function StatCard({ label, value, hint, icon, tone = "accent" }: { label: string; value: ReactNode; hint?: string; icon?: ReactNode; tone?: "accent" | "amber" | "blue" | "pink" }) {
+  const iconBg: Record<string, string> = {
+    accent: "bg-accent-soft text-accent", amber: "bg-amber-400/10 text-amber-400",
+    blue: "bg-sky-400/10 text-sky-400", pink: "bg-pink-400/10 text-pink-400",
+  };
   return (
-    <Card className="transition-shadow hover:shadow-md">
-      <div className="text-sm font-medium text-slate-500">{label}</div>
-      <div className={`mt-2 text-3xl font-semibold tracking-tight ${accent ? "text-accent-600" : "text-slate-800"}`}>{value}</div>
-      {hint && <div className="mt-1 text-xs text-slate-400">{hint}</div>}
-    </Card>
+    <div className="rounded-2xl border border-line bg-surface p-5 transition-colors hover:border-accent/40">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-muted">{label}</span>
+        {icon && <span className={`grid h-9 w-9 place-items-center rounded-xl ${iconBg[tone]}`}>{icon}</span>}
+      </div>
+      <div className="mt-3 text-3xl font-semibold tracking-tight text-ink">{value}</div>
+      {hint && <div className="mt-1 text-xs text-faint">{hint}</div>}
+    </div>
   );
 }
 
-export function SectionTitle({ children }: { children: ReactNode }) {
-  return <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">{children}</h2>;
+export function SectionTitle({ children, right }: { children: ReactNode; right?: ReactNode }) {
+  return (
+    <div className="mb-4 flex items-center justify-between">
+      <h2 className="text-base font-semibold text-ink">{children}</h2>
+      {right}
+    </div>
+  );
 }
 
 export function Badge({ children, tone = "slate" }: { children: ReactNode; tone?: "slate" | "green" | "amber" | "red" | "blue" }) {
   const tones: Record<string, string> = {
-    slate: "bg-slate-100 text-slate-600", green: "bg-accent-50 text-accent-700",
-    amber: "bg-amber-50 text-amber-700", red: "bg-red-50 text-red-700", blue: "bg-blue-50 text-blue-700",
+    slate: "bg-white/5 text-muted", green: "bg-accent-soft text-accent",
+    amber: "bg-amber-400/10 text-amber-400", red: "bg-red-400/10 text-red-400", blue: "bg-sky-400/10 text-sky-400",
   };
   return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${tones[tone]}`}>{children}</span>;
 }
 
 export function Empty({ children }: { children: ReactNode }) {
-  return <div className="rounded-xl border border-dashed border-slate-200 bg-white p-10 text-center text-sm text-slate-400">{children}</div>;
+  return <div className="rounded-2xl border border-dashed border-line bg-surface/50 p-10 text-center text-sm text-faint">{children}</div>;
 }
 
 export function Loading() {
-  return <div className="animate-pulse text-sm text-slate-400">Načítám…</div>;
+  return <div className="animate-pulse text-sm text-faint">Načítám…</div>;
+}
+
+/** Jednoduchý donut graf ze segmentů (SVG). */
+export function Donut({ segments, size = 128, stroke = 16 }: { segments: { value: number; color: string; label?: string }[]; size?: number; stroke?: number }) {
+  const total = segments.reduce((s, x) => s + x.value, 0) || 1;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  let offset = 0;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--color-line)" strokeWidth={stroke} />
+        {segments.map((s, i) => {
+          const len = (s.value / total) * c;
+          const el = <circle key={i} cx={size / 2} cy={size / 2} r={r} fill="none" stroke={s.color} strokeWidth={stroke} strokeDasharray={`${len} ${c - len}`} strokeDashoffset={-offset} strokeLinecap="round" />;
+          offset += len;
+          return el;
+        })}
+      </g>
+    </svg>
+  );
 }
 
 /** Formát peněz z minor jednotky (string/number/bigint) na "1 234 Kč". */
