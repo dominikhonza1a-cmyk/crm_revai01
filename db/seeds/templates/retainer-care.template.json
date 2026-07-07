@@ -1,0 +1,19 @@
+{
+  "key": "retainer-care",
+  "name": "Retainer – průběžná správa",
+  "project_type": "process_automation",
+  "engagement_type": "retainer",
+  "default_sla_tier": "standard",
+  "phases": [
+    { "key": "kickoff", "name": "Kickoff", "position": 1, "duration_days": 3 },
+    { "key": "ongoing", "name": "Ongoing", "position": 2, "duration_days": 0 },
+    { "key": "closed", "name": "Closed", "position": 3, "duration_days": 0 }
+  ],
+  "tasks": [
+    { "phase_key": "kickoff", "title": "Nastavení SLA a komunikačních kanálů", "default_assignee_role": "pm", "offset_days": 0, "estimate_minutes": 90 },
+    { "phase_key": "ongoing", "title": "Account review", "default_assignee_role": "pm", "offset_days": 0, "estimate_minutes": 60, "recurrence_rule": "FREQ=MONTHLY;BYMONTHDAY=1" },
+    { "phase_key": "ongoing", "title": "Usage & cost report", "default_assignee_role": "dev", "offset_days": 0, "estimate_minutes": 90, "recurrence_rule": "FREQ=MONTHLY;BYMONTHDAY=5" },
+    { "phase_key": "ongoing", "title": "Backlog grooming", "default_assignee_role": "pm", "offset_days": 0, "estimate_minutes": 45, "recurrence_rule": "FREQ=WEEKLY;INTERVAL=2;BYDAY=MO" },
+    { "phase_key": "ongoing", "title": "Roadmap call", "default_assignee_role": "pm", "offset_days": 0, "estimate_minutes": 60, "recurrence_rule": "FREQ=MONTHLY;INTERVAL=3;BYMONTHDAY=10" }
+  ]
+}

@@ -1,0 +1,4 @@
+Title,Company,Amount,Currency,Stage,Owner,Close date,Type
+Chatbot pro zákaznický servis,Acme s.r.o.,250000,CZK,Proposal,owner1@example.com,2026-08-15,chatbot_voicebot
+Automatizace fakturace,Beta Manufacturing,180000,CZK,Discovery,owner2@example.com,2026-09-01,process_automation
+RAG asistent nad dokumentací,Ceglinka Finance,420000,CZK,Qualified,owner1@example.com,2026-10-01,custom_ai

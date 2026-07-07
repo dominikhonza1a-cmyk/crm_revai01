@@ -1,0 +1,26 @@
+{
+  "_comment": "Výchozí ne-tajné hodnoty a feature flags. Tajemství patří do .env / secret store.",
+  "features": {
+    "nativeFileUpload": false,
+    "calendarSync": false,
+    "gitIntegration": false,
+    "zapierMake": false,
+    "reportingDrillDown": false,
+    "postgresRls": false
+  },
+  "limits": {
+    "recurrenceWindowDays": 60,
+    "importMaxRows": 50000,
+    "timelinePageSize": 50,
+    "immediateNotificationRatePerMinute": 10
+  },
+  "retentionDefaults": {
+    "leadNoConversionMonths": 18,
+    "clientDataAfterContractYears": 4,
+    "communicationClientYears": 3,
+    "auditLogYears": 3,
+    "auditSensitiveYears": 5,
+    "backupRotationDays": 35
+  },
+  "digest": { "defaultHour": 7 }
+}

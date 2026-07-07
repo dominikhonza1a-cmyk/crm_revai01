@@ -1,0 +1,11 @@
+{
+  "_comment": "Normalizovaný příchozí email (po email sync, fáze 3). Ukládá se metadata + snippet, NE celé tělo.",
+  "messageId": "CAF=abc123@mail.gmail.com",
+  "threadId": "thread-789",
+  "from": "jan.novak@acme.cz",
+  "to": ["owner1@example.com"],
+  "subject": "Re: Nasazení chatbota",
+  "snippet": "Díky za update, kdy plánujete go-live? …",
+  "receivedAt": "2026-07-07T08:14:00Z",
+  "_matching": { "contactEmail": "jan.novak@acme.cz", "matchedDealTitle": "Chatbot pro zákaznický servis" }
+}

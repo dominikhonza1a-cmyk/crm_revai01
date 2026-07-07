@@ -1,0 +1,10 @@
+{
+  "_comment": "Odchozí payload, který CRM POSTuje na CHAT_WEBHOOK_URL (Slack incoming webhook formát). Teams = jiný formatter.",
+  "text": "🚨 SLA breach risk: ticket #1234 (Acme s.r.o.)",
+  "blocks": [
+    { "type": "section", "text": { "type": "mrkdwn", "text": "*SLA breach risk* — ticket *#1234*\nKlient: Acme s.r.o. · Priorita: P1 · Zbývá: 12 min" } },
+    { "type": "actions", "elements": [
+      { "type": "button", "text": { "type": "plain_text", "text": "Otevřít v CRM" }, "url": "https://crm.example.com/tasks/1234" }
+    ] }
+  ]
+}

@@ -1,0 +1,4 @@
+First name,Last name,Email,Phone,Title,Company,Role
+Jan,Novák,jan.novak@acme.cz,+420601234567,CTO,Acme s.r.o.,technical_contact
+Petra,Svobodová,petra@acme.cz,,Head of Ops,Acme s.r.o.,sponsor
+Tomáš,Dvořák,tomas.dvorak@beta-mfg.com,,COO,Beta Manufacturing,decision_maker

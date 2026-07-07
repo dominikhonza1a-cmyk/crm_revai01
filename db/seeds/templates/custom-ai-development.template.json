@@ -1,0 +1,27 @@
+{
+  "key": "custom-ai-development",
+  "name": "Custom AI vývoj (RAG / agenti)",
+  "project_type": "custom_ai",
+  "engagement_type": "one_off",
+  "default_sla_tier": "standard",
+  "phases": [
+    { "key": "kickoff", "name": "Kickoff", "position": 1, "duration_days": 5 },
+    { "key": "discovery", "name": "Discovery", "position": 2, "duration_days": 14 },
+    { "key": "build", "name": "Build", "position": 3, "duration_days": 30 },
+    { "key": "test_uat", "name": "Test / UAT", "position": 4, "duration_days": 14 },
+    { "key": "deploy", "name": "Deploy", "position": 5, "duration_days": 5 },
+    { "key": "hypercare", "name": "Hypercare", "position": 6, "duration_days": 21 },
+    { "key": "closed", "name": "Closed", "position": 7, "duration_days": 0 }
+  ],
+  "tasks": [
+    { "phase_key": "kickoff", "title": "Kickoff + rozsah a cíle", "default_assignee_role": "pm", "offset_days": 0, "estimate_minutes": 120 },
+    { "phase_key": "discovery", "title": "Datový audit + feasibility", "default_assignee_role": "dev", "offset_days": 0, "estimate_minutes": 480 },
+    { "phase_key": "build", "title": "M1 – prototyp", "default_assignee_role": "dev", "offset_days": 0, "estimate_minutes": 1200 },
+    { "phase_key": "build", "title": "M2 – eval sada", "default_assignee_role": "dev", "offset_days": 12, "estimate_minutes": 480 },
+    { "phase_key": "build", "title": "M3 – integrace", "default_assignee_role": "dev", "offset_days": 20, "estimate_minutes": 720 },
+    { "phase_key": "test_uat", "title": "Eval report + UAT", "default_assignee_role": "pm", "offset_days": 0, "estimate_minutes": 360 },
+    { "phase_key": "deploy", "title": "Nasazení + monitoring", "default_assignee_role": "dev", "offset_days": 0, "estimate_minutes": 240 },
+    { "phase_key": "hypercare", "title": "Provozní dohled", "default_assignee_role": "dev", "offset_days": 0, "estimate_minutes": 180 },
+    { "phase_key": "closed", "title": "Zdrojáky + provozní dokumentace + přístup do Gitu", "default_assignee_role": "dev", "offset_days": 0, "estimate_minutes": 180 }
+  ]
+}

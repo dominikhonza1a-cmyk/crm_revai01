@@ -1,0 +1,28 @@
+{
+  "key": "chatbot-delivery",
+  "name": "Chatbot / Voicebot – dodávka",
+  "project_type": "chatbot_voicebot",
+  "engagement_type": "one_off",
+  "default_sla_tier": "standard",
+  "phases": [
+    { "key": "kickoff", "name": "Kickoff", "position": 1, "duration_days": 5 },
+    { "key": "discovery", "name": "Discovery", "position": 2, "duration_days": 10 },
+    { "key": "build", "name": "Build", "position": 3, "duration_days": 20 },
+    { "key": "test_uat", "name": "Test / UAT", "position": 4, "duration_days": 10 },
+    { "key": "deploy", "name": "Deploy", "position": 5, "duration_days": 3 },
+    { "key": "hypercare", "name": "Hypercare", "position": 6, "duration_days": 14 },
+    { "key": "closed", "name": "Closed", "position": 7, "duration_days": 0 }
+  ],
+  "tasks": [
+    { "phase_key": "kickoff", "title": "Úvodní call + sběr přístupů (KB, web, kanály)", "default_assignee_role": "pm", "offset_days": 0, "estimate_minutes": 90 },
+    { "phase_key": "discovery", "title": "Audit znalostní báze", "default_assignee_role": "dev", "offset_days": 0, "estimate_minutes": 240 },
+    { "phase_key": "discovery", "title": "Mapa konverzačních scénářů", "default_assignee_role": "pm", "offset_days": 3, "estimate_minutes": 180 },
+    { "phase_key": "build", "title": "Prompt / agent design", "default_assignee_role": "dev", "offset_days": 0, "estimate_minutes": 480 },
+    { "phase_key": "build", "title": "Integrace kanálu", "default_assignee_role": "dev", "offset_days": 5, "estimate_minutes": 360 },
+    { "phase_key": "build", "title": "Testovací sada otázek", "default_assignee_role": "dev", "offset_days": 10, "estimate_minutes": 180 },
+    { "phase_key": "test_uat", "title": "UAT s klientem + ladění odpovědí", "default_assignee_role": "pm", "offset_days": 0, "estimate_minutes": 300 },
+    { "phase_key": "deploy", "title": "Go-live + zapojení monitoringu", "default_assignee_role": "dev", "offset_days": 0, "estimate_minutes": 180 },
+    { "phase_key": "hypercare", "title": "Sledování a doladění", "default_assignee_role": "dev", "offset_days": 0, "estimate_minutes": 120 },
+    { "phase_key": "closed", "title": "Předávací dokumentace + nabídka retaineru", "default_assignee_role": "pm", "offset_days": 0, "estimate_minutes": 120 }
+  ]
+}

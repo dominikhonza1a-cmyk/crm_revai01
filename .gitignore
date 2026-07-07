@@ -1,0 +1,17 @@
+node_modules/
+.next/
+.storage/
+dist/
+coverage/
+*.log
+
+# secrets — NIKDY necommitovat
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+
+# build artefakt
+tsconfig.tsbuildinfo

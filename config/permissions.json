@@ -1,0 +1,26 @@
+{
+  "_comment": "Deklarativní matice rolí. Zdroj pravdy pro seed 02-permissions. Úrovně: none < read < write < manage.",
+  "levels": ["none", "read", "write", "manage"],
+  "modules": ["organizations", "contacts", "deals", "projects", "tasks", "documents", "reporting", "settings", "audit"],
+  "roles": {
+    "admin":   { "organizations": "manage", "contacts": "manage", "deals": "manage", "projects": "manage", "tasks": "manage", "documents": "manage", "reporting": "manage", "settings": "manage", "audit": "read" },
+    "sales":   { "organizations": "write",  "contacts": "write",  "deals": "write",  "projects": "read",   "tasks": "write",  "documents": "write",  "reporting": "read",   "settings": "none",   "audit": "none" },
+    "pm":      { "organizations": "write",  "contacts": "write",  "deals": "read",   "projects": "manage", "tasks": "manage", "documents": "manage", "reporting": "read",   "settings": "none",   "audit": "none" },
+    "dev":     { "organizations": "read",   "contacts": "read",   "deals": "none",   "projects": "write",  "tasks": "write",  "documents": "write",  "reporting": "none",   "settings": "none",   "audit": "none" },
+    "support": { "organizations": "read",   "contacts": "write",  "deals": "none",   "projects": "read",   "tasks": "write",  "documents": "read",   "reporting": "read",   "settings": "none",   "audit": "none" }
+  },
+  "fieldPolicies": {
+    "_comment": "hidden = pole se nevrátí; masked = vrátí se zamaskované; read/write dle běžné úrovně.",
+    "deal.financials":     { "admin": "write", "sales": "write", "pm": "read",   "dev": "hidden", "support": "hidden" },
+    "project.budget":      { "admin": "write", "sales": "read",  "pm": "read",   "dev": "hidden", "support": "hidden" },
+    "contact.pii":         { "admin": "write", "sales": "write", "pm": "read",   "dev": "masked", "support": "write" },
+    "document.secret_ref": { "admin": "write", "sales": "none",  "pm": "write",  "dev": "read",   "support": "none" }
+  },
+  "exportPermissions": {
+    "_comment": "Default jen admin. Ostatní role lze zapnout explicitně. Každý export se auditovaně loguje.",
+    "export.contacts": ["admin"],
+    "export.deals":    ["admin"],
+    "export.projects": ["admin"],
+    "export.audit":    ["admin"]
+  }
+}
