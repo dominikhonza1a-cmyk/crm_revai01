@@ -31,4 +31,9 @@ export async function withTransaction<T>(fn: (tx: Tx) => Promise<T>): Promise<T>
   return db().transaction(fn);
 }
 
+/** Uzavře DB spojení — volat na konci CLI skriptů (seed, migrace), jinak proces „visí" na otevřeném poolu. */
+export async function closeDb(): Promise<void> {
+  if (_sql) { await _sql.end({ timeout: 5 }); _sql = null; _db = null; }
+}
+
 export { schema };

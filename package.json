@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "worker": "tsx src/worker.ts",
+    "worker": "tsx --env-file=.env src/worker.ts",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
@@ -17,9 +17,9 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx scripts/migrate.ts",
-    "db:seed": "tsx scripts/seed.ts",
-    "db:reset": "tsx scripts/dev-reset.ts"
+    "db:migrate": "tsx --env-file=.env scripts/migrate.ts",
+    "db:seed": "tsx --env-file=.env scripts/seed.ts",
+    "db:reset": "tsx --env-file=.env scripts/dev-reset.ts"
   },
   "dependencies": {
     "@trpc/server": "^11.0.0",
