@@ -17,4 +17,5 @@ export * from "@/modules/projects/project-template.entity";
 export * from "@/modules/activities/activity.entity";
 // 0004 — tasks + SLA
 export * from "@/modules/tasks/task.entity";
-// 0005+ (fáze 1 pokr.): document
+// 0005 — dokumenty
+export * from "@/modules/documents/document.entity";
