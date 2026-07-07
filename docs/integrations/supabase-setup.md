@@ -8,10 +8,10 @@ CRM používá Supabase jako **managed PostgreSQL + autentizaci**. Byznys logika
 3. Zvol silné DB heslo (ulož do 1Password / Vault — do gitu nikdy).
 
 ## 2. Klíče a connection stringy → do `.env`
-Project Settings → **API**:
+Project Settings → **API** (nový formát klíčů):
 - `SUPABASE_URL` = Project URL
-- `SUPABASE_ANON_KEY` = anon public (jde i do frontendu jako `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
-- `SUPABASE_SERVICE_ROLE_KEY` = service_role (**jen server**, nikdy do prohlížeče/gitu)
+- `SUPABASE_PUBLISHABLE_KEY` = Publishable key `sb_publishable_…` (jde i do frontendu jako `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`)
+- `SUPABASE_SECRET_KEY` = Secret key `sb_secret_…` (**jen server**, nikdy do prohlížeče/gitu)
 
 Project Settings → **Database → Connection string**:
 - `DATABASE_URL` = **Transaction pooler** (port 6543) — pro web app
@@ -20,7 +20,7 @@ Project Settings → **Database → Connection string**:
 Do `.env` přidej i pro frontend:
 ```
 NEXT_PUBLIC_SUPABASE_URL=<stejné jako SUPABASE_URL>
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key>
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<publishable key>
 ```
 
 ## 3. Auth nastavení (Supabase → Authentication)

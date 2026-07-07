@@ -10,10 +10,10 @@ const EnvSchema = z.object({
   DEFAULT_TIMEZONE: z.string().default("Europe/Prague"),
   DEFAULT_CURRENCY: z.string().length(3).default("CZK"),
 
-  // Supabase (DB + Auth)
+  // Supabase (DB + Auth) — nový formát klíčů (Publishable / Secret)
   SUPABASE_URL: z.string().url(),
-  SUPABASE_ANON_KEY: z.string().min(20),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(20),
+  SUPABASE_PUBLISHABLE_KEY: z.string().min(20),   // klient (dřív "anon public")
+  SUPABASE_SECRET_KEY: z.string().min(20),        // jen server (dřív "service_role")
   DATABASE_URL: z.string().url(),          // pooled (6543) — web app
   DIRECT_URL: z.string().url(),            // direct (5432) — migrace + worker
 
