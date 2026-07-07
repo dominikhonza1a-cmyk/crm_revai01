@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { trpc } from "@/ui/trpc";
 import { Card, Badge, Loading, Empty } from "@/ui/components/ui";
 
@@ -22,17 +23,19 @@ export default function ProjectsPage() {
       {data.items.map((p) => {
         const st = STATUS[p.status];
         return (
-          <Card key={p.id} className="cursor-pointer transition-colors hover:border-accent/40">
-            <div className="flex items-start justify-between gap-2">
-              <span className="font-medium text-ink">{p.name}</span>
-              {st && <Badge tone={st.tone}>{st.label}</Badge>}
-            </div>
-            <div className="mt-2 flex items-center gap-2 text-xs text-faint">
-              <span>{TYPE[p.projectType] ?? p.projectType}</span>
-              <span>·</span>
-              <span>{p.engagementType === "retainer" ? "Retainer" : "Jednorázový"}</span>
-            </div>
-          </Card>
+          <Link key={p.id} href={`/projects/${p.id}`}>
+            <Card className="cursor-pointer transition-colors hover:border-accent/40">
+              <div className="flex items-start justify-between gap-2">
+                <span className="font-medium text-ink">{p.name}</span>
+                {st && <Badge tone={st.tone}>{st.label}</Badge>}
+              </div>
+              <div className="mt-2 flex items-center gap-2 text-xs text-faint">
+                <span>{TYPE[p.projectType] ?? p.projectType}</span>
+                <span>·</span>
+                <span>{p.engagementType === "retainer" ? "Retainer" : "Jednorázový"}</span>
+              </div>
+            </Card>
+          </Link>
         );
       })}
     </div>

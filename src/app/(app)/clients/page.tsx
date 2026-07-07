@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { trpc } from "@/ui/trpc";
 import { Card, Badge, Loading, Empty } from "@/ui/components/ui";
 
@@ -11,6 +12,7 @@ const LIFECYCLE: Record<string, { label: string; tone: "slate" | "green" | "ambe
 };
 
 export default function ClientsPage() {
+  const router = useRouter();
   const { data, isLoading, error } = trpc.organizations.list.useQuery(undefined);
   if (error) return <div className="rounded-2xl border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-300">Chyba: {error.message}</div>;
   if (isLoading || !data) return <Loading />;
@@ -32,7 +34,7 @@ export default function ClientsPage() {
             {data.items.map((o) => {
               const lc = LIFECYCLE[o.lifecycleStage];
               return (
-                <tr key={o.id} className="cursor-pointer transition-colors hover:bg-white/5">
+                <tr key={o.id} onClick={() => router.push(`/clients/${o.id}`)} className="cursor-pointer transition-colors hover:bg-white/5">
                   <td className="px-4 py-3 font-medium text-ink">{o.name}</td>
                   <td className="px-4 py-3">{lc ? <Badge tone={lc.tone}>{lc.label}</Badge> : o.lifecycleStage}</td>
                   <td className="px-4 py-3 text-muted">{o.industry ?? "—"}</td>

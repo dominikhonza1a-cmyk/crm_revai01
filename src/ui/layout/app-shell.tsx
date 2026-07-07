@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
+import { NewClientModal, NewDealModal } from "@/ui/components/create-modals";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: "grid" },
@@ -36,6 +37,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [modal, setModal] = useState<null | "client" | "deal">(null);
 
   useEffect(() => {
     setCollapsed(localStorage.getItem("sidebar-collapsed") === "1");
@@ -86,9 +89,20 @@ export function AppShell({ children }: { children: ReactNode }) {
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-line bg-surface/60 px-6">
           <h1 className="text-lg font-semibold text-ink">{title}</h1>
           <div className="flex items-center gap-4">
-            <button className="flex items-center gap-1.5 rounded-xl bg-accent-strong px-3.5 py-2 text-sm font-semibold text-[#08110c] transition-colors hover:brightness-110">
-              <Icon name="plus" className="h-4 w-4" /> Nový
-            </button>
+            <div className="relative">
+              <button onClick={() => setMenuOpen((o) => !o)} className="flex items-center gap-1.5 rounded-xl bg-accent-strong px-3.5 py-2 text-sm font-semibold text-[#08110c] transition-all hover:brightness-110">
+                <Icon name="plus" className="h-4 w-4" /> Nový
+              </button>
+              {menuOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+                  <div className="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-xl shadow-black/30">
+                    <button className="block w-full px-4 py-2 text-left text-sm text-muted hover:bg-white/5 hover:text-ink" onClick={() => { setModal("client"); setMenuOpen(false); }}>Nový klient</button>
+                    <button className="block w-full px-4 py-2 text-left text-sm text-muted hover:bg-white/5 hover:text-ink" onClick={() => { setModal("deal"); setMenuOpen(false); }}>Nový deal</button>
+                  </div>
+                </>
+              )}
+            </div>
             <div className="flex items-center gap-3 text-sm text-muted">
               <span className="hidden sm:inline">{email}</span>
               <button onClick={logout} className="grid h-9 w-9 place-items-center rounded-xl text-faint hover:bg-white/5 hover:text-ink" title="Odhlásit">
@@ -99,6 +113,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
         <main className="flex-1 overflow-auto p-6">{children}</main>
       </div>
+
+      {modal === "client" && <NewClientModal onClose={() => setModal(null)} />}
+      {modal === "deal" && <NewDealModal onClose={() => setModal(null)} />}
     </div>
   );
 }
