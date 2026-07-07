@@ -1,44 +1,88 @@
 import type { TenantContext } from "@/shared";
+import { audit } from "@/shared";
 import { assertPhaseChange, assertStatusChange } from "@/domain/policies/project-phase.policy";
-import type { CreateFromTemplateInput, AdvancePhaseInput, ChangeStatusInput } from "./project.types";
+import type { ProjectPhaseKey, EngagementType, ProjectStatus } from "@/domain/enums";
+import { NotFound } from "@/domain/errors";
+import { projectRepository } from "./project.repository";
+import { projectTemplateRepository } from "./project-template.repository";
+import { dealRepository } from "@/modules/deals/deal.repository";
+import { activityService } from "@/modules/activities/activity.service";
+import type { CreateFromTemplateInput, AdvancePhaseInput, ChangeStatusInput, ProjectListFilter } from "./project.types";
+import type { ProjectRow } from "./project.entity";
+
+type TemplatePhase = { key: string; name: string; position: number; duration_days?: number };
 
 /**
- * Use-casy modulu projects. Referenční implementace modulové konvence:
- * createFromTemplate (W2), provisionTasks (W3), advancePhase, changeStatus (draft→active potvrzení PM).
+ * Use-casy modulu projects. createFromTemplate = W2 (Won→projekt draft, idempotentní přes deal_id).
+ * Fáze/tasky se KOPÍRUJÍ (snapshot). Task provisioning (W3) se dopočítá s modulem tasks.
  */
-export interface ProjectService {
-  createFromTemplate(ctx: TenantContext, input: CreateFromTemplateInput): Promise<{ projectId: string }>;
-  provisionTasks(ctx: TenantContext, projectId: string): Promise<void>;
-  advancePhase(ctx: TenantContext, input: AdvancePhaseInput): Promise<void>;
-  changeStatus(ctx: TenantContext, input: ChangeStatusInput): Promise<void>;
-}
+export const projectService = {
+  async createFromTemplate(ctx: TenantContext, input: CreateFromTemplateInput): Promise<{ projectId: string; created: boolean }> {
+    // IDEMPOTENCE: existuje-li projekt pro deal, vrať ho (opakovaný webhook/klik nevytvoří druhý)
+    const existing = await projectRepository.findByDealId(input.dealId);
+    if (existing) return { projectId: existing.id, created: false };
 
-export const projectService: ProjectService = {
-  async createFromTemplate(_ctx, input) {
-    // IDEMPOTENCE: v transakci SELECT deal FOR UPDATE; pokud deal.createdProjectId != null → vrať existující
-    // 1) najdi ProjectTemplate dle input.templateKey / projectType (default)
-    // 2) vytvoř Project(status=draft) + zkopíruj (snapshot) fáze do project_phase
-    // 3) provisionTasks(projectId)  ← W3
-    // 4) dealRepository.setCreatedProject(dealId, projectId)
-    // 5) eventBus.publish(project.created); activities.writeTimeline(project_created)
-    void input; throw new Error("projectService.createFromTemplate: implementace fáze 2 (policy hotová v domain).");
+    const template = input.templateKey
+      ? await projectTemplateRepository.getByKey(input.templateKey)
+      : await projectTemplateRepository.getByProjectType(input.projectType);
+
+    const project = await projectRepository.create({
+      organizationId: input.organizationId, dealId: input.dealId, templateId: template?.id ?? null,
+      name: template?.name ?? "Nový projekt", projectType: input.projectType,
+      engagementType: (template?.engagementType as EngagementType) ?? "one_off",
+      ownerId: ctx.userId, createdBy: ctx.userId,
+    });
+
+    const phases = ((template?.phases as TemplatePhase[] | undefined) ?? []).map((p) => ({ key: p.key, name: p.name, position: p.position }));
+    const inserted = await projectRepository.insertPhases(project.id, phases);
+    if (inserted[0]) await projectRepository.setCurrentPhaseNoActivate(project.id, inserted[0].id);
+
+    await dealRepository.setCreatedProject(input.dealId, project.id);
+    await activityService.writeTimeline(ctx, {
+      entityType: "project", entityId: project.id, organizationId: input.organizationId,
+      eventType: "project_created", title: `Projekt vytvořen z dealu (${template?.name ?? input.projectType})`,
+      sourceType: "project", sourceId: project.id,
+    });
+    return { projectId: project.id, created: true };
   },
-  async provisionTasks(_ctx, _projectId) {
-    // z TaskTemplate: vytvoř Task s due_at = start + Σ(předchozí fáze duration) + offset_days,
-    // přiřaď dle default_assignee_role (nejbližší user s rolí, jinak nepřiřazeno).
-    // recurring TaskTemplate → master task s recurrence_rule.
-    throw new Error("projectService.provisionTasks: implementace fáze 2.");
+
+  async advancePhase(ctx: TenantContext, input: AdvancePhaseInput): Promise<void> {
+    const project = await projectRepository.getById(input.projectId);
+    if (!project) throw new NotFound("Project", input.projectId);
+    const phases = await projectRepository.listPhases(input.projectId);
+    const current = phases.find((p) => p.id === project.currentPhaseId);
+    const target = phases.find((p) => p.key === input.toPhase);
+    if (!target) throw new NotFound("ProjectPhase", input.toPhase);
+
+    assertPhaseChange(project.engagementType as EngagementType, (current?.key as ProjectPhaseKey) ?? null, input.toPhase, input.allowBackwards);
+    await projectRepository.setCurrentPhase(input.projectId, target.id, target.key);
+    await audit.audited(ctx, "project_phase_changed", { type: "project", id: project.id },
+      { current_phase: { from: current?.key ?? null, to: target.key } });
+    await activityService.writeTimeline(ctx, {
+      entityType: "project", entityId: project.id, organizationId: project.organizationId,
+      eventType: "phase_changed", title: `Fáze → ${target.name}`, payload: { to: target.key },
+    });
   },
-  async advancePhase(_ctx, input) {
-    // assertPhaseChange(engagement, from, to, allowBackwards)  ← domain policy
-    void assertPhaseChange; void input;
-    // audit.audited(ctx, "project_phase_changed", …); eventBus.publish(project.phase_changed)
-    throw new Error("projectService.advancePhase: implementace fáze 1.");
+
+  async changeStatus(ctx: TenantContext, input: ChangeStatusInput): Promise<ProjectRow> {
+    const project = await projectRepository.getById(input.projectId);
+    if (!project) throw new NotFound("Project", input.projectId);
+    assertStatusChange(project.status as ProjectStatus, input.toStatus);
+    const updated = await projectRepository.setStatus(input.projectId, input.toStatus);
+    await audit.audited(ctx, "project_status_changed", { type: "project", id: project.id },
+      { status: { from: project.status, to: input.toStatus } });
+    return updated;
   },
-  async changeStatus(_ctx, input) {
-    // assertStatusChange(from, to)  ← draft→active potvrzuje PM
-    void assertStatusChange; void input;
-    // audit.audited(ctx, "project_status_changed", …); publish(project.status_changed)
-    throw new Error("projectService.changeStatus: implementace fáze 1.");
+
+  async list(_ctx: TenantContext, filter: ProjectListFilter) {
+    return projectRepository.list(filter);
+  },
+
+  async get(_ctx: TenantContext, id: string): Promise<ProjectRow | null> {
+    return projectRepository.getById(id);
+  },
+
+  async phases(_ctx: TenantContext, projectId: string) {
+    return projectRepository.listPhases(projectId);
   },
 };

@@ -11,4 +11,8 @@ export * from "@/modules/contacts/contact.entity";
 export * from "@/modules/deals/deal.entity";
 export * from "@/shared/tags/tag.entity";
 export * from "@/shared/custom-fields/custom-field.entity";
-// 0003+ (fáze 1 pokr.): project, task, activity, timeline, sla, document
+// 0003 — delivery core
+export * from "@/modules/projects/project.entity";
+export * from "@/modules/projects/project-template.entity";
+export * from "@/modules/activities/activity.entity";
+// 0004+ (fáze 1 pokr.): task, sla, document

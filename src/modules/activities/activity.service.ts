@@ -1,28 +1,30 @@
 import type { TenantContext } from "@/shared";
+import { activityRepository } from "./activity.repository";
 import type { ActivityCreateInput, TimelineWriteInput, TimelineListFilter } from "./activity.types";
 
 /**
- * JEDINÝ zapisovač timeline v celé aplikaci. Services i workflow engine volají writeTimeline() — nikdo
- * nezapisuje TimelineEvent přímo. Activity (lidská akce) se při dokončení projektuje do TimelineEventu.
- * UI čte pouze timeline (list) — jeden dotaz, jedno řazení. Viz docs/data-model/activity-vs-timeline.md.
+ * JEDINÝ zapisovač timeline. Services i workflow engine volají writeTimeline() — nikdo nezapisuje
+ * TimelineEvent přímo. UI čte pouze timeline (list). Viz docs/data-model/activity-vs-timeline.md.
  */
-export interface ActivityService {
-  logActivity(ctx: TenantContext, input: ActivityCreateInput): Promise<{ activityId: string }>;
-  /** Idempotentní zápis do timeline (unique source_type+source_id+event_type). */
-  writeTimeline(ctx: TenantContext, input: TimelineWriteInput): Promise<void>;
-  listTimeline(ctx: TenantContext, filter: TimelineListFilter): Promise<unknown>;
-}
+export const activityService = {
+  async logActivity(ctx: TenantContext, input: ActivityCreateInput): Promise<{ activityId: string }> {
+    const a = await activityRepository.createActivity({ ...input, workspaceId: ctx.workspaceId, ownerId: ctx.userId });
+    if (a.status === "done") {
+      await this.writeTimeline(ctx, {
+        entityType: input.entityType, entityId: input.entityId,
+        eventType: input.type === "email" ? "email_sent" : "note_added",
+        title: input.subject, sourceType: "activity", sourceId: a.id,
+      });
+    }
+    return { activityId: a.id };
+  },
 
-export const activityService: ActivityService = {
-  async logActivity(_ctx, input) {
-    // vytvoř Activity; při completedAt → writeTimeline(activity_logged / email_sent / meeting_held …)
-    void input; throw new Error("activityService.logActivity: fáze 1.");
+  /** Idempotentní zápis do timeline. actorId se bere z ctx (nebo null = systém). */
+  async writeTimeline(ctx: TenantContext, input: TimelineWriteInput): Promise<void> {
+    await activityRepository.insertTimelineEvent({ ...input, workspaceId: ctx.workspaceId, actorId: input.actorId ?? ctx.userId });
   },
-  async writeTimeline(_ctx, input) {
-    // INSERT timeline_event ON CONFLICT (source_type, source_id, event_type) DO NOTHING (idempotence)
-    void input; throw new Error("activityService.writeTimeline: fáze 1.");
-  },
-  async listTimeline(_ctx, filter) {
-    void filter; throw new Error("activityService.listTimeline: fáze 1 (cursor pagination).");
+
+  async listTimeline(_ctx: TenantContext, filter: TimelineListFilter) {
+    return activityRepository.listTimeline(filter);
   },
 };

@@ -1,5 +1,6 @@
 import type { TenantContext } from "@/shared";
 import { audit, eventBus } from "@/shared";
+import { activityService } from "@/modules/activities/activity.service";
 import { assertDealStageChange, isWinTransition, type StageInfo } from "@/domain/policies/deal-stage.policy";
 import type { StageKind } from "@/domain/enums";
 import { NotFound } from "@/domain/errors";
@@ -62,6 +63,19 @@ export const dealService = {
 
     await audit.audited(ctx, "deal_stage_changed", { type: "deal", id: deal.id },
       { pipeline_stage_id: { from: deal.pipelineStageId, to: toStage.id } });
+
+    // timeline
+    await activityService.writeTimeline(ctx, {
+      entityType: "deal", entityId: deal.id, organizationId: deal.organizationId,
+      eventType: "deal_stage_changed", title: `Fáze dealu → ${toStage.name}`,
+      payload: { from: deal.pipelineStageId, to: toStage.id },
+    });
+    if (to.kind === "won") await activityService.writeTimeline(ctx, {
+      entityType: "deal", entityId: deal.id, organizationId: deal.organizationId, eventType: "deal_won", title: "Deal vyhrán 🎉",
+    });
+    if (to.kind === "lost") await activityService.writeTimeline(ctx, {
+      entityType: "deal", entityId: deal.id, organizationId: deal.organizationId, eventType: "deal_lost", title: "Deal prohrán",
+    });
 
     const base = {
       workspaceId: asId<WorkspaceId>(ctx.workspaceId), occurredAt: now.toISOString(),

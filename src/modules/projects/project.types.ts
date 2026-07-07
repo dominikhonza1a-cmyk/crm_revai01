@@ -18,11 +18,11 @@ export interface ProjectCreateInput {
 
 export type ProjectUpdateInput = Partial<Omit<ProjectCreateInput, "organizationId">>;
 
-/** Vstup pro automat Won→projekt (W2). */
+/** Vstup pro automat Won→projekt (W2). projectType je string (z deal.project_type_hint / DB). */
 export interface CreateFromTemplateInput {
   dealId: string;
   organizationId: string;
-  projectType: ProjectType;
+  projectType: string;
   templateKey?: string;             // default dle projectType
 }
 

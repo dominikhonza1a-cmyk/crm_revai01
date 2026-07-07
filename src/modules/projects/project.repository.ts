@@ -1,23 +1,90 @@
-import type { Project } from "@/domain/entities";
-import type { TenantScopedRepository } from "@/shared/repository-base";
-import type { ProjectCreateInput, ProjectUpdateInput, ProjectListFilter } from "./project.types";
+import { randomUUID } from "node:crypto";
+import { and, eq, isNull, desc } from "drizzle-orm";
+import { db } from "@/shared/db";
+import { currentWorkspaceId } from "@/shared/tenant-context";
+import { clampLimit, type Page } from "@/shared/pagination";
+import { projects, projectPhases, type ProjectRow, type ProjectPhaseRow } from "./project.entity";
+import type { ProjectListFilter } from "./project.types";
 
-export interface ProjectRepository extends TenantScopedRepository<Project, ProjectCreateInput, ProjectUpdateInput, ProjectListFilter> {
-  findByDealId(dealId: string): Promise<Project | null>;      // idempotence guard
-  insertPhases(projectId: string, phases: { key: string; name: string; position: number; dueDate: string | null }[]): Promise<void>;
-  setCurrentPhase(projectId: string, phaseId: string): Promise<void>;
-  listRetainersForReview(now: Date): Promise<Project[]>;      // W6
+export interface ProjectInsertData {
+  organizationId: string; dealId?: string | null; templateId?: string | null;
+  name: string; code?: string | null; projectType: string; engagementType: string;
+  ownerId?: string | null; startDate?: string | null; createdBy?: string | null;
 }
 
-export const projectRepository: ProjectRepository = {
-  async findById() { throw new Error("projectRepository.findById: fáze 1."); },
-  async list() { throw new Error("projectRepository.list: fáze 1."); },
-  async create() { throw new Error("projectRepository.create: fáze 1."); },
-  async update() { throw new Error("projectRepository.update: fáze 1."); },
-  async softDelete() { throw new Error("projectRepository.softDelete: fáze 1."); },
-  async restore() { throw new Error("projectRepository.restore: fáze 1."); },
-  async findByDealId() { throw new Error("projectRepository.findByDealId: fáze 2."); },
-  async insertPhases() { throw new Error("projectRepository.insertPhases: fáze 2."); },
-  async setCurrentPhase() { throw new Error("projectRepository.setCurrentPhase: fáze 1."); },
-  async listRetainersForReview() { throw new Error("projectRepository.listRetainersForReview: fáze 2."); },
+export const projectRepository = {
+  async getById(id: string): Promise<ProjectRow | null> {
+    const ws = currentWorkspaceId();
+    return (await db().select().from(projects)
+      .where(and(eq(projects.id, id), eq(projects.workspaceId, ws), isNull(projects.deletedAt))).limit(1))[0] ?? null;
+  },
+
+  async findByDealId(dealId: string): Promise<ProjectRow | null> {
+    const ws = currentWorkspaceId();
+    return (await db().select().from(projects)
+      .where(and(eq(projects.dealId, dealId), eq(projects.workspaceId, ws))).limit(1))[0] ?? null;
+  },
+
+  async list(filter: ProjectListFilter, limit?: number): Promise<Page<ProjectRow>> {
+    const ws = currentWorkspaceId();
+    const conds = [eq(projects.workspaceId, ws), isNull(projects.deletedAt)];
+    if (filter.organizationId) conds.push(eq(projects.organizationId, filter.organizationId));
+    if (filter.status) conds.push(eq(projects.status, filter.status));
+    if (filter.engagementType) conds.push(eq(projects.engagementType, filter.engagementType));
+    if (filter.ownerId) conds.push(eq(projects.ownerId, filter.ownerId));
+    const items = await db().select().from(projects)
+      .where(and(...conds)).orderBy(desc(projects.createdAt)).limit(clampLimit(limit));
+    return { items, nextCursor: null };
+  },
+
+  async create(data: ProjectInsertData): Promise<ProjectRow> {
+    const ws = currentWorkspaceId();
+    const id = randomUUID();
+    await db().insert(projects).values({
+      id, workspaceId: ws,
+      organizationId: data.organizationId, dealId: data.dealId ?? null, templateId: data.templateId ?? null,
+      name: data.name, code: data.code ?? null, projectType: data.projectType, engagementType: data.engagementType,
+      status: "draft", ownerId: data.ownerId ?? null, startDate: data.startDate ?? null, createdBy: data.createdBy ?? null,
+    });
+    return (await this.getById(id))!;
+  },
+
+  async insertPhases(projectId: string, phases: { key: string; name: string; position: number; dueDate?: string | null }[]): Promise<ProjectPhaseRow[]> {
+    const ws = currentWorkspaceId();
+    if (!phases.length) return [];
+    await db().insert(projectPhases).values(phases.map((p) => ({
+      id: randomUUID(), workspaceId: ws, projectId, key: p.key, name: p.name, position: p.position,
+      status: "pending", dueDate: p.dueDate ?? null,
+    })));
+    return db().select().from(projectPhases).where(eq(projectPhases.projectId, projectId)).orderBy(projectPhases.position);
+  },
+
+  async listPhases(projectId: string): Promise<ProjectPhaseRow[]> {
+    const ws = currentWorkspaceId();
+    return db().select().from(projectPhases)
+      .where(and(eq(projectPhases.workspaceId, ws), eq(projectPhases.projectId, projectId))).orderBy(projectPhases.position);
+  },
+
+  async setCurrentPhase(projectId: string, phaseId: string, phaseKey: string): Promise<void> {
+    const ws = currentWorkspaceId();
+    await db().update(projects).set({ currentPhaseId: phaseId, updatedAt: new Date() })
+      .where(and(eq(projects.id, projectId), eq(projects.workspaceId, ws)));
+    await db().update(projectPhases).set({ status: "active", startedAt: new Date() })
+      .where(and(eq(projectPhases.id, phaseId), eq(projectPhases.workspaceId, ws)));
+    void phaseKey;
+  },
+
+  /** Nastaví aktuální fázi BEZ aktivace (draft projekt — fáze zůstávají pending). */
+  async setCurrentPhaseNoActivate(projectId: string, phaseId: string): Promise<void> {
+    const ws = currentWorkspaceId();
+    await db().update(projects).set({ currentPhaseId: phaseId, updatedAt: new Date() })
+      .where(and(eq(projects.id, projectId), eq(projects.workspaceId, ws)));
+  },
+
+  async setStatus(projectId: string, status: string): Promise<ProjectRow> {
+    const ws = currentWorkspaceId();
+    await db().update(projects).set({ status, updatedAt: new Date() })
+      .where(and(eq(projects.id, projectId), eq(projects.workspaceId, ws)));
+    return (await this.getById(projectId))!;
+  },
 };

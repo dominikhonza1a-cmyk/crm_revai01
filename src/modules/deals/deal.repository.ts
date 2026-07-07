@@ -93,4 +93,11 @@ export const dealRepository = {
     await db().update(deals).set({ deletedAt: new Date() })
       .where(and(eq(deals.id, id), eq(deals.workspaceId, ws)));
   },
+
+  /** Idempotence Won→Project: naváže vzniklý projekt na deal. */
+  async setCreatedProject(dealId: string, projectId: string): Promise<void> {
+    const ws = currentWorkspaceId();
+    await db().update(deals).set({ createdProjectId: projectId, updatedAt: new Date() })
+      .where(and(eq(deals.id, dealId), eq(deals.workspaceId, ws)));
+  },
 };

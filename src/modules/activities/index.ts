@@ -1,13 +1,11 @@
 /**
  * Modul ACTIVITIES — lidské aktivity + agregovaná timeline.
- * Soubory: activity.types.ts · activity.entity.ts (Activity + TimelineEvent) · activity.repository.ts ·
- *          activity.service.ts (JEDINÝ zapisovač timeline) · activity.workflow.ts (projekce eventů → timeline).
+ * Soubory: activity.types · activity.entity (Activity + TimelineEvent) · activity.repository ·
+ *          activity.service (JEDINÝ zapisovač timeline) · activity.router · activity.workflow.
  * Timeline agreguje obchod + delivery + support (viz docs/data-model/activity-vs-timeline.md).
  */
 export * from "./activity.types";
 export { activityService } from "./activity.service";
 export { activityRepository } from "./activity.repository";
+export { activitiesRouter } from "./activity.router";
 export { registerActivityWorkflows } from "./activity.workflow";
-export function registerModule(): void { /* registerActivityWorkflows() z bootstrapu */ }
-
-export const ACTIVITIES_ROUTER_NOTE = "activities.{logActivity,listTimeline,listUpcoming}; timeline read-only feed.";

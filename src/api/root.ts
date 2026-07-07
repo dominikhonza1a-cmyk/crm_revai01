@@ -1,11 +1,17 @@
 import { router, publicProcedure, protectedProcedure } from "./trpc";
+import { bootstrap } from "./bootstrap";
 import { organizationsRouter } from "@/modules/organizations";
 import { contactsRouter } from "@/modules/contacts";
 import { dealsRouter } from "@/modules/deals";
+import { projectsRouter } from "@/modules/projects";
+import { activitiesRouter } from "@/modules/activities";
+
+// zaregistruje event subscribery (W2: deal.won → projekt) jednou při načtení
+bootstrap();
 
 /**
- * appRouter — skládá module routery. Fáze 0: health, me. Fáze 1: organizations, contacts, deals (CRM core).
- * Další moduly (projects, tasks, activities, …) se přidávají, jak vznikají.
+ * appRouter — skládá module routery. Fáze 1: CRM core + delivery core (projekty, timeline).
+ * Další moduly (tasks, documents, reporting, …) se přidávají, jak vznikají.
  */
 export const appRouter = router({
   health: publicProcedure.query(() => ({ ok: true, ts: new Date().toISOString() })),
@@ -21,8 +27,10 @@ export const appRouter = router({
   organizations: organizationsRouter,
   contacts: contactsRouter,
   deals: dealsRouter,
+  projects: projectsRouter,
+  activities: activitiesRouter,
 
-  // Fáze 1 pokr.: projects, tasks, activities, documents, reporting, security, integrations
+  // Fáze 1 pokr.: tasks, documents, reporting, security, integrations
 });
 
 export type AppRouter = typeof appRouter;

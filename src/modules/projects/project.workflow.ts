@@ -1,17 +1,21 @@
 import { eventBus } from "@/shared/event-bus";
+import { logger } from "@/shared/logger";
+import type { TenantContext } from "@/shared";
 import { projectService } from "./project.service";
+import { dealRepository } from "@/modules/deals/deal.repository";
 
 /**
- * Subscriby modulu projects na eventy jiných modulů + scheduled hooky.
- * Deklaruje reakce; skutečnou práci deleguje na service.
+ * W2: Won deal → projekt v draftu ze šablony. Subscriber na event deal.won.
+ * Ve fázi 1 běží in-process (synchronně v rámci requestu); fáze 2 → durable outbox + worker.
  */
 export function registerProjectWorkflows(): void {
-  // W2: Won deal → projekt v draftu
   eventBus.subscribe("deal.won", async (e) => {
-    void projectService; void e;
-    // odvodí ctx (systémový actor) + zavolá projectService.createFromTemplate
-    throw new Error("projects.workflow deal.won → createFromTemplate: fáze 2.");
+    const ctx: TenantContext = { workspaceId: e.workspaceId, userId: e.actorId, requestId: "event:deal.won" };
+    const deal = await dealRepository.getById(e.dealId);
+    const projectType = deal?.projectTypeHint ?? "process_automation";
+    const res = await projectService.createFromTemplate(ctx, {
+      dealId: e.dealId, organizationId: e.organizationId, projectType,
+    });
+    logger.info("W2: Won deal → projekt", { dealId: e.dealId, projectId: res.projectId, created: res.created });
   });
-
-  // W6 (account review) a phase due kontroly běží přes scheduler (registrováno ve worker.ts).
 }
