@@ -1,6 +1,7 @@
 import { seedTenant } from "./00-tenant.seed";
 import { seedRoles } from "./01-roles.seed";
 import { seedPipelineStages } from "./03-pipeline-stages.seed";
+import { seedSlaTiers } from "./05-sla-tiers.seed";
 import { seedTags } from "./06-tags.seed";
 import { seedProjectTemplates } from "./08-project-templates.seed";
 
@@ -12,11 +13,9 @@ export async function runSeeds(opts: { withDemo?: boolean } = {}): Promise<void>
   const { workspaceId } = await seedTenant();   // 00 — workspace + owner účty
   await seedRoles(workspaceId);                  // 01 + 02 — role z permissions.json, admin ownerům
   await seedPipelineStages(workspaceId);         // 03 — sales pipeline
+  await seedSlaTiers(workspaceId);                // 05 — SLA tiery (support Basic/Standard/Premium + delivery)
   await seedTags(workspaceId);                    // 06 — výchozí tagy
   await seedProjectTemplates(workspaceId);        // 08 — projektové šablony (chatbot/automation/custom-ai/retainer)
-
-  // Fáze 1 pokr. (po vzniku dalších tabulek):
-  // await seedSlaTiers(workspaceId);            // 05
   if (opts.withDemo) { /* 99 demo data */ }
 
   console.log(`Seed OK — workspace ${workspaceId}`);

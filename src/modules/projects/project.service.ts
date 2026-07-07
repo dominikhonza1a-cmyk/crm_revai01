@@ -7,6 +7,7 @@ import { projectRepository } from "./project.repository";
 import { projectTemplateRepository } from "./project-template.repository";
 import { dealRepository } from "@/modules/deals/deal.repository";
 import { activityService } from "@/modules/activities/activity.service";
+import { taskRepository } from "@/modules/tasks/task.repository";
 import type { CreateFromTemplateInput, AdvancePhaseInput, ChangeStatusInput, ProjectListFilter } from "./project.types";
 import type { ProjectRow } from "./project.entity";
 
@@ -36,6 +37,20 @@ export const projectService = {
     const phases = ((template?.phases as TemplatePhase[] | undefined) ?? []).map((p) => ({ key: p.key, name: p.name, position: p.position }));
     const inserted = await projectRepository.insertPhases(project.id, phases);
     if (inserted[0]) await projectRepository.setCurrentPhaseNoActivate(project.id, inserted[0].id);
+
+    // W3: provisioning delivery tasků ze šablony (recurring master tasky retaineru se materializují až ve fázi 2)
+    if (template) {
+      const taskTpls = await projectTemplateRepository.listTaskTemplates(template.id);
+      const phaseIdByKey = new Map(inserted.map((p) => [p.key, p.id]));
+      const base = project.startDate ? new Date(project.startDate) : new Date();
+      for (const tt of taskTpls) {
+        if (tt.recurrenceRule) continue;
+        await taskRepository.create({
+          type: "delivery", title: tt.title, projectId: project.id, phaseId: phaseIdByKey.get(tt.phaseKey) ?? null,
+          dueAt: new Date(base.getTime() + tt.offsetDays * 86_400_000), createdBy: ctx.userId,
+        });
+      }
+    }
 
     await dealRepository.setCreatedProject(input.dealId, project.id);
     await activityService.writeTimeline(ctx, {
