@@ -3,10 +3,17 @@
 
 [build]
   command = "npm run build"
-  publish = ".next"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
 [functions]
   directory = "netlify/functions"
+
+[build.environment]
+  # Secrets scanning: vyjmout NE-tajné konfigurační hodnoty (obyčejná slova jako "supabase",
+  # "link", "single" se přirozeně vyskytují v bundlu → falešné poplachy) a NEXT_PUBLIC_* klíče
+  # (publishable key je z definice veřejný a v client bundlu být MÁ).
+  # Skutečné secrety se hlídají dál: SUPABASE_SECRET_KEY, DATABASE_URL, DIRECT_URL, CRON_SECRET,
+  # SMTP_URL, CHAT_WEBHOOK_URL.
+  SECRETS_SCAN_OMIT_KEYS = "AUTH_PROVIDER,SEED_WORKSPACE_NAME,SEED_OWNER_EMAILS,STORAGE_PROVIDER,STORAGE_BUCKET,TENANCY_MODE,DEFAULT_TIMEZONE,DEFAULT_CURRENCY,APP_URL,EMAIL_PROVIDER,CHAT_PROVIDER,SECRETS_BACKEND,DIGEST_DEFAULT_HOUR,SMTP_FROM,SUPABASE_URL,NEXT_PUBLIC_SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,NODE_ENV"

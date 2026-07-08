@@ -30,6 +30,16 @@ Zkopíruj hodnoty ze svého lokálního `.env` (Import from a .env file to umí 
 | `EMAIL_PROVIDER` / `SMTP_URL` / `SMTP_FROM` | `smtp` + údaje (až budou; do té doby `console`) |
 | `DEFAULT_TIMEZONE`, `DEFAULT_CURRENCY`, `SECRETS_BACKEND`, `STORAGE_PROVIDER` | jako lokálně |
 
+⚠️ **Dvě výjimky při kopírování z lokálního `.env`:**
+- `NODE_ENV` na Netlify **vůbec nenastavuj / smaž** (řídí si ho Netlify samo; lokální hodnota `development` by rozbila produkční build),
+- `APP_URL` musí být produkční `https://crm.automatizace-ai.cz` (ne localhost) — jinak odkazy v notifikacích povedou špatně.
+
+ℹ️ **Secrets scanning:** Netlify kontroluje, jestli hodnoty env proměnných „neuniklý" do buildu. Ne-tajné
+konfigurační hodnoty (`supabase`, `link`, `single`, …) by způsobily falešné poplachy — proto je
+`netlify.toml` vyjímá přes `SECRETS_SCAN_OMIT_KEYS`. Skutečné secrety (`SUPABASE_SECRET_KEY`,
+`DATABASE_URL`, `DIRECT_URL`, `CRON_SECRET`, `SMTP_URL`, `CHAT_WEBHOOK_URL`) se hlídají dál.
+V UI stačí jako „secret" označit jen tyto skutečné secrety.
+
 Pak **Deploy site**.
 
 ### 3. Subdoména
