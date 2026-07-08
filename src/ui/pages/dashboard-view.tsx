@@ -1,5 +1,4 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
 import { StatCard, Card, SectionTitle, Badge, Empty, Donut, money } from "@/ui/components/ui";
 
 const STATUS_LABEL: Record<string, string> = { draft: "Draft", active: "Aktivní", on_hold: "Pozastavené", closed: "Uzavřené" };
@@ -15,10 +14,6 @@ export interface DashboardData {
   myWork: { count: number };
 }
 
-function I({ d }: { d: ReactNode }) {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">{d}</svg>;
-}
-
 /** Prezentační dashboard — dostane data, nic nefetchuje (použito v /dashboard i pro náhledy). */
 export function DashboardView({ data }: { data: DashboardData }) {
   const totalPipeline = data.pipeline.reduce((s, p) => s + Number(p.valueMinor), 0);
@@ -29,10 +24,10 @@ export function DashboardView({ data }: { data: DashboardData }) {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Link href="/tasks"><StatCard label="Moje práce" value={data.myWork.count} hint="otevřené úkoly" tone="accent" icon={<I d={<><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></>} />} /></Link>
-        <StatCard label="Win-rate" value={data.win.winRatePct != null ? `${data.win.winRatePct}%` : "—"} hint={`vyhráno ${data.win.won} · prohráno ${data.win.lost}`} tone="blue" doodle="/doodles/trophy.png" icon={<I d={<><circle cx="12" cy="8" r="6" /><path d="M15.5 13.5 17 22l-5-3-5 3 1.5-8.5" /></>} />} />
-        <Link href="/tasks"><StatCard label="Po termínu" value={data.overdue.count} hint="overdue úkoly" tone="amber" icon={<I d={<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>} />} /></Link>
-        <Link href="/deals"><StatCard label="Pipeline value" value={money(totalPipeline)} hint="otevřené dealy" tone="pink" icon={<I d={<><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></>} />} /></Link>
+        <Link href="/tasks"><StatCard label="Moje práce" value={data.myWork.count} hint="otevřené úkoly" iconSrc="/doodles/icon-tasks.png" /></Link>
+        <StatCard label="Win-rate" value={data.win.winRatePct != null ? `${data.win.winRatePct}%` : "—"} hint={`vyhráno ${data.win.won} · prohráno ${data.win.lost}`} iconSrc="/doodles/icon-medal.png" doodle="/doodles/trophy.png" />
+        <Link href="/tasks"><StatCard label="Po termínu" value={data.overdue.count} hint="overdue úkoly" iconSrc="/doodles/icon-clock.png" /></Link>
+        <Link href="/deals"><StatCard label="Pipeline value" value={money(totalPipeline)} hint="otevřené dealy" iconSrc="/doodles/icon-coins.png" /></Link>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
