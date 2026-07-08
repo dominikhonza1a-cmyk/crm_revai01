@@ -2,20 +2,24 @@
 
 **MVP scope:** odchozí notifikace + denní digest přes SMTP. Logování komunikace / obousměrný sync = fáze 3.
 
-## Odchozí e-maily přes SendGrid (zvolené řešení)
+## Odchozí e-maily přes Resend (zvolené řešení)
 
-Účet SendGrid existuje, odesílatel `info@automatizace-ai.cz` je ověřený. Nastavení:
-1. SendGrid → **Settings → API Keys → Create API Key** → název `revai CRM`, oprávnění **Restricted Access**
-   → zapnout jen **Mail Send** → Create → zkopírovat klíč (`SG.…` — zobrazí se jen jednou).
+Účet Resend existuje, doména/odesílatel `info@automatizace-ai.cz` je ověřený. Resend má i SMTP relay,
+takže funguje s naším SMTP adapterem beze změny kódu. Free tier: 3 000 e-mailů/měsíc (100/den) — dostatečné.
+
+1. Resend → **API Keys → Create API Key** → název `revai CRM`, permission **Sending access**
+   → Create → zkopírovat klíč (`re_…` — zobrazí se jen jednou).
 2. Env proměnné (lokálně v `.env` i v Netlify → Environment variables):
    ```
    EMAIL_PROVIDER=smtp
-   SMTP_URL=smtps://apikey:SG.TVUJ_KLIC@smtp.sendgrid.net:465
+   SMTP_URL=smtps://resend:re_TVUJ_KLIC@smtp.resend.com:465
    SMTP_FROM=revai CRM <info@automatizace-ai.cz>
    ```
-   (uživatelské jméno je doslova `apikey`, heslo je API klíč; SMTP_URL označit v Netlify jako secret)
+   (uživatelské jméno je doslova `resend`, heslo je API klíč; SMTP_URL označit v Netlify jako secret)
 3. Netlify → **Trigger deploy**, aby se env propsaly.
 4. Ověření: vyřeš/zmeškej úkol nebo vyhraj deal → e-mail dorazí na adresu uživatele v CRM.
+
+*(Alternativa SendGrid: SMTP_URL=smtps://apikey:SG.KLIC@smtp.sendgrid.net:465 — kdyby se někdy měnil provider.)*
 
 ## Adapter `EmailProvider` (`src/adapters/email/email.port.ts`)
 ```ts

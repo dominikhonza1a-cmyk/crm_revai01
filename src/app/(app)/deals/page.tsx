@@ -76,6 +76,7 @@ export default function DealsPage() {
       {/* Potvrzení výhry */}
       {pending && pending.stage.kind === "won" && (
         <Modal title="Označit jako vyhraný?" onClose={() => setPending(null)}>
+          <img src="/doodles/trophy.png" alt="" width={100} height={100} className="mx-auto mb-2" />
           <p className="text-sm text-muted">
             Deal <span className="font-medium text-ink">„{pending.dealTitle}"</span> se přesune do <span className="text-accent">Vyhráno</span> a
             automaticky vznikne <span className="font-medium text-ink">projekt v draftu</span> ze šablony (fáze + úkoly).

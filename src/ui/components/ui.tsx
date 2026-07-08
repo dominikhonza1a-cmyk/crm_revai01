@@ -40,8 +40,13 @@ export function Badge({ children, tone = "slate" }: { children: ReactNode; tone?
   return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${tones[tone]}`}>{children}</span>;
 }
 
-export function Empty({ children }: { children: ReactNode }) {
-  return <div className="rounded-2xl border border-dashed border-line bg-surface/50 p-10 text-center text-sm text-faint">{children}</div>;
+export function Empty({ children, doodle = "/doodles/empty-box.png" }: { children: ReactNode; doodle?: string | null }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-line bg-surface/50 p-8 text-center">
+      {doodle && <img src={doodle} alt="" width={96} height={96} className="mx-auto mb-2 opacity-90" />}
+      <div className="text-sm text-faint">{children}</div>
+    </div>
+  );
 }
 
 export function Loading() {
