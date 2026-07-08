@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { trpc } from "@/ui/trpc";
-import { Card, Badge, Tabs, Loading, Empty } from "@/ui/components/ui";
+import { Card, Badge, Tabs, Loading, Empty, btnPrimary } from "@/ui/components/ui";
 import { TimelineTab, DocumentsTab } from "@/ui/components/entity-tabs";
+import { NewTaskModal, TaskStatusSelect } from "@/ui/components/entity-forms";
 
 const STATUS: Record<string, { label: string; tone: "slate" | "green" | "amber" }> = {
   draft: { label: "Draft", tone: "slate" }, active: { label: "Aktivní", tone: "green" },
@@ -17,24 +18,43 @@ const TABS = [{ key: "overview", label: "Přehled" }, { key: "tasks", label: "Ú
 export default function ProjectDetailPage() {
   const projectId = useParams().projectId as string;
   const [tab, setTab] = useState("overview");
+  const utils = trpc.useUtils();
   const project = trpc.projects.get.useQuery({ id: projectId });
   const phases = trpc.projects.phases.useQuery({ id: projectId });
+
+  const invalidate = async () => Promise.all([utils.projects.get.invalidate({ id: projectId }), utils.projects.phases.invalidate({ id: projectId }), utils.projects.list.invalidate(), utils.activities.timeline.invalidate()]);
+  const changeStatus = trpc.projects.changeStatus.useMutation({ onSuccess: invalidate });
+  const advancePhase = trpc.projects.advancePhase.useMutation({ onSuccess: invalidate });
 
   if (project.isLoading) return <Loading />;
   if (!project.data) return <Empty>Projekt nenalezen</Empty>;
   const p = project.data;
   const st = STATUS[p.status];
+  const actionError = changeStatus.error ?? advancePhase.error;
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Link href="/projects" className="grid h-8 w-8 place-items-center rounded-lg text-faint hover:bg-white/5 hover:text-ink">←</Link>
         <h1 className="text-2xl font-semibold text-ink">{p.name}</h1>
         {st && <Badge tone={st.tone}>{st.label}</Badge>}
         <span className="text-sm text-faint">{TYPE[p.projectType] ?? p.projectType} · {p.engagementType === "retainer" ? "Retainer" : "Jednorázový"}</span>
+        <span className="flex-1" />
+        {p.status === "draft" && (
+          <button className={btnPrimary} disabled={changeStatus.isPending}
+            onClick={() => changeStatus.mutate({ projectId, toStatus: "active" })}>
+            {changeStatus.isPending ? "Aktivuji…" : "✓ Potvrdit a aktivovat"}
+          </button>
+        )}
+        {p.status === "on_hold" && (
+          <button className={btnPrimary} disabled={changeStatus.isPending}
+            onClick={() => changeStatus.mutate({ projectId, toStatus: "active" })}>Obnovit</button>
+        )}
       </div>
 
-      {/* Fáze-stepper */}
+      {actionError && <div className="rounded-2xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-300">{actionError.message}</div>}
+
+      {/* Fáze-stepper — klik na budoucí fázi ji aktivuje */}
       {phases.data && phases.data.length > 0 && (
         <Card>
           <div className="flex flex-wrap items-center gap-1.5">
@@ -43,12 +63,22 @@ export default function ProjectDetailPage() {
               const done = ph.status === "done";
               return (
                 <div key={ph.id} className="flex items-center gap-1.5">
-                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${current ? "bg-accent-strong text-[#08110c]" : done ? "bg-accent-soft text-accent" : "bg-white/5 text-muted"}`}>{ph.name}</span>
+                  <button
+                    disabled={current || advancePhase.isPending}
+                    onClick={() => advancePhase.mutate({ projectId, toPhase: ph.key as never })}
+                    title={current ? "Aktuální fáze" : `Posunout do fáze ${ph.name}`}
+                    className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                      current ? "bg-accent-strong text-[#08110c]"
+                      : done ? "bg-accent-soft text-accent"
+                      : "bg-white/5 text-muted hover:bg-white/10 hover:text-ink"}`}>
+                    {ph.name}
+                  </button>
                   {i < phases.data!.length - 1 && <span className="text-faint">›</span>}
                 </div>
               );
             })}
           </div>
+          <p className="mt-2 text-xs text-faint">Klikem na fázi projekt posuneš (zpět jen se souhlasem admina).</p>
         </Card>
       )}
 
@@ -69,18 +99,32 @@ export default function ProjectDetailPage() {
 
 function ProjectTasks({ projectId }: { projectId: string }) {
   const q = trpc.tasks.list.useQuery({ projectId, view: "all" });
+  const [open, setOpen] = useState(false);
   if (q.isLoading || !q.data) return <Loading />;
-  if (!q.data.items.length) return <Empty>Žádné úkoly</Empty>;
   return (
-    <Card className="overflow-hidden p-0">
-      <ul className="divide-y divide-line">
-        {q.data.items.map((t) => (
-          <li key={t.id} className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm text-ink">{t.title}</span>
-            <Badge tone={t.status === "done" ? "green" : t.status === "in_progress" ? "blue" : "slate"}>{t.status}</Badge>
-          </li>
-        ))}
-      </ul>
-    </Card>
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <button className="rounded-xl border border-line px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent/40 hover:text-accent" onClick={() => setOpen(true)}>+ Úkol</button>
+      </div>
+      {q.data.items.length === 0 ? <Empty>Žádné úkoly</Empty> : (
+        <Card className="overflow-hidden p-0">
+          <ul className="divide-y divide-line">
+            {q.data.items.map((t) => (
+              <li key={t.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                <div className="min-w-0">
+                  <div className="truncate text-sm text-ink">{t.title}</div>
+                  <div className="mt-0.5 text-xs text-faint">
+                    <span className="uppercase">{t.priority}</span>
+                    {t.dueAt && <span> · do {new Date(t.dueAt).toLocaleDateString("cs-CZ")}</span>}
+                  </div>
+                </div>
+                <TaskStatusSelect taskId={t.id} status={t.status} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+      {open && <NewTaskModal projectId={projectId} onClose={() => setOpen(false)} />}
+    </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { trpc } from "@/ui/trpc";
 import { Card, Badge, Loading, Empty } from "@/ui/components/ui";
+import { TaskStatusSelect } from "@/ui/components/entity-forms";
 
 const TABS = [
   { key: "my_work", label: "Moje práce" },
@@ -10,15 +11,6 @@ const TABS = [
   { key: "all", label: "Vše" },
 ] as const;
 type View = (typeof TABS)[number]["key"];
-
-const STATUS: Record<string, { label: string; tone: "slate" | "green" | "amber" | "blue" | "red" }> = {
-  todo: { label: "K řešení", tone: "slate" },
-  in_progress: { label: "Probíhá", tone: "blue" },
-  waiting_on_client: { label: "Čeká na klienta", tone: "amber" },
-  blocked: { label: "Blokováno", tone: "red" },
-  done: { label: "Hotovo", tone: "green" },
-  canceled: { label: "Zrušeno", tone: "slate" },
-};
 
 export default function TasksPage() {
   const [view, setView] = useState<View>("my_work");
@@ -41,22 +33,19 @@ export default function TasksPage() {
         : (
           <Card className="overflow-hidden p-0">
             <ul className="divide-y divide-line">
-              {data.items.map((t) => {
-                const st = STATUS[t.status];
-                return (
-                  <li key={t.id} className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-white/5">
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-medium text-ink">{t.title}</div>
-                      <div className="mt-0.5 flex items-center gap-2 text-xs text-faint">
-                        {t.type === "support" && <Badge tone="blue">ticket</Badge>}
-                        <span className="uppercase">{t.priority}</span>
-                        {t.dueAt && <span>· do {new Date(t.dueAt).toLocaleDateString("cs-CZ")}</span>}
-                      </div>
+              {data.items.map((t) => (
+                <li key={t.id} className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-white/5">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium text-ink">{t.title}</div>
+                    <div className="mt-0.5 flex items-center gap-2 text-xs text-faint">
+                      {t.type === "support" && <Badge tone="blue">ticket</Badge>}
+                      <span className="uppercase">{t.priority}</span>
+                      {t.dueAt && <span>· do {new Date(t.dueAt).toLocaleDateString("cs-CZ")}</span>}
                     </div>
-                    {st && <Badge tone={st.tone}>{st.label}</Badge>}
-                  </li>
-                );
-              })}
+                  </div>
+                  <TaskStatusSelect taskId={t.id} status={t.status} />
+                </li>
+              ))}
             </ul>
           </Card>
         )}

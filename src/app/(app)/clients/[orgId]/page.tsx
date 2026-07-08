@@ -6,6 +6,7 @@ import Link from "next/link";
 import { trpc } from "@/ui/trpc";
 import { Card, Badge, Tabs, Loading, Empty, money } from "@/ui/components/ui";
 import { TimelineTab, DocumentsTab } from "@/ui/components/entity-tabs";
+import { NewContactModal } from "@/ui/components/entity-forms";
 
 const LIFECYCLE: Record<string, { label: string; tone: "slate" | "green" | "amber" | "blue" }> = {
   prospect: { label: "Prospekt", tone: "blue" }, active_client: { label: "Klient", tone: "green" },
@@ -69,11 +70,21 @@ function ProjectsTab({ orgId }: { orgId: string }) {
 
 function ContactsTab({ orgId }: { orgId: string }) {
   const q = trpc.contacts.list.useQuery({ organizationId: orgId });
+  const [open, setOpen] = useState(false);
   if (q.isLoading || !q.data) return <Loading />;
-  if (!q.data.items.length) return <Empty>Žádné kontakty</Empty>;
-  return <Card className="p-0 overflow-hidden"><ul className="divide-y divide-line">{q.data.items.map((c, i) => (
-    <li key={i} className="flex items-center justify-between px-4 py-3"><span className="text-ink">{c.firstName} {c.lastName}</span><span className="text-sm text-muted">{c.jobTitle ?? ""} {c.email ? `· ${c.email}` : ""}</span></li>
-  ))}</ul></Card>;
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <button className="rounded-xl border border-line px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent/40 hover:text-accent" onClick={() => setOpen(true)}>+ Kontakt</button>
+      </div>
+      {q.data.items.length === 0 ? <Empty>Žádné kontakty</Empty> : (
+        <Card className="p-0 overflow-hidden"><ul className="divide-y divide-line">{q.data.items.map((c, i) => (
+          <li key={i} className="flex items-center justify-between px-4 py-3"><span className="text-ink">{c.firstName} {c.lastName}</span><span className="text-sm text-muted">{c.jobTitle ?? ""} {c.email ? `· ${c.email}` : ""}</span></li>
+        ))}</ul></Card>
+      )}
+      {open && <NewContactModal organizationId={orgId} onClose={() => setOpen(false)} />}
+    </div>
+  );
 }
 
 function DealsTab({ orgId }: { orgId: string }) {
