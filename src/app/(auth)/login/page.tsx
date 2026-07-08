@@ -49,9 +49,9 @@ export default function LoginPage() {
   return (
     <div className="grid min-h-screen place-items-center bg-bg px-4">
       <div className="w-full max-w-sm">
-        <img src="/doodles/robot.png" alt="" width={120} height={120} className="mx-auto mb-1" />
+        <img src="/doodles/pandulak.png" alt="" width={130} height={130} className="mx-auto mb-1" />
         <div className="mb-6 flex items-center justify-center gap-2.5">
-          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-accent-strong text-lg font-bold text-[#08110c]">r</div>
+          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-accent-strong font-display text-2xl text-[#08110c]">R</div>
           <span className="font-display text-3xl tracking-wider text-ink">REVAI CRM</span>
         </div>
         <div className="rounded-2xl border border-line bg-surface p-6 shadow-xl shadow-black/20">

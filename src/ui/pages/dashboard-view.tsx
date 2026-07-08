@@ -94,7 +94,7 @@ export function DashboardView({ data }: { data: DashboardData }) {
 
         <Card>
           <SectionTitle>Revenue / klient</SectionTitle>
-          {data.revenue.length === 0 ? <Empty>Zatím žádné vyhrané dealy</Empty> : (
+          {data.revenue.length === 0 ? <Empty doodle="/doodles/chart.png">Zatím žádné vyhrané dealy</Empty> : (
             <div className="space-y-2">
               {data.revenue.map((r) => (
                 <div key={r.organization} className="flex items-center justify-between rounded-xl px-3 py-2 hover:bg-white/5">

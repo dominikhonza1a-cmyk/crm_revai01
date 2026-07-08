@@ -63,7 +63,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Sidebar */}
       <aside className={`${collapsed ? "w-16" : "w-60"} flex flex-col border-r border-line bg-surface transition-all duration-200`}>
         <div className="flex h-16 items-center gap-2.5 px-4">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent-strong font-bold text-[#08110c]">r</div>
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent-strong font-display text-lg text-[#08110c]">R</div>
           {!collapsed && <span className="font-display text-xl tracking-wider text-ink">REVAI CRM</span>}
         </div>
         <nav className="flex-1 space-y-1 px-2.5 py-2">

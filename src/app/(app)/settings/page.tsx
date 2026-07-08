@@ -43,7 +43,10 @@ export default function SettingsPage() {
 
       <Card>
         <SectionTitle>Připravujeme</SectionTitle>
-        <p className="text-sm text-muted">Správa uživatelů a pozvánky, pipeline &amp; fáze, custom fields, tagy, integrace (email/chat), notifikace, workflows, GDPR a audit log — přidáme v dalších krocích.</p>
+        <div className="flex items-center gap-4">
+          <img src="/doodles/robot.png" alt="" width={84} height={84} className="shrink-0" />
+          <p className="text-sm text-muted">Správa uživatelů a pozvánky, pipeline &amp; fáze, custom fields, tagy, integrace (email/chat, Gmail sync, Git), notifikace na míru — přidáme v dalších krocích.</p>
+        </div>
       </Card>
     </div>
   );
