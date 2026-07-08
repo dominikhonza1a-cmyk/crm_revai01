@@ -26,6 +26,8 @@ const EnvSchema = z.object({
   SECRETS_BACKEND: z.enum(["env", "vault", "1password"]).default("env"),
   EMAIL_PROVIDER: z.enum(["console", "smtp", "gmail", "outlook"]).default("console"),
   SMTP_URL: z.string().optional(),
+  SMTP_FROM: z.string().optional(),          // např. "revai CRM <info@automatizace-ai.cz>"
+  CRON_SECRET: z.string().optional(),        // ochrana /api/jobs (Netlify cron funkce)
   CHAT_PROVIDER: z.enum(["console", "webhook"]).default("console"),
   CHAT_WEBHOOK_URL: z.string().url().optional(),
   STORAGE_PROVIDER: z.enum(["link", "supabase", "s3"]).default("link"),

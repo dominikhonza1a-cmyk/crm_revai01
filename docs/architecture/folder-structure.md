@@ -10,7 +10,7 @@ revai_CRM/
 │   ├── app.config.ts           # zod-validace env při startu (fail-fast)
 │   ├── default.json            # ne-tajné defaulty, feature flags, retenční lhůty
 │   ├── permissions.json        # matice role → permission (zdroj pro seed)
-│   └── notification-rules.json # událost → kanál/režim (default)
+│   └── notification-rules.ts   # událost → kanál/režim (default)
 │
 ├── docs/                       # návrh (tento dokument a sourozenci)
 │   ├── product/                # vize, architektura, reporting, implementační strategie, glosář

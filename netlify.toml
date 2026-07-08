@@ -1,0 +1,12 @@
+# Netlify nasazení: Next.js web + cron funkce (nahrazují pg-boss worker v serverless prostředí).
+# Postup nasazení: docs/deployment/netlify.md
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[functions]
+  directory = "netlify/functions"

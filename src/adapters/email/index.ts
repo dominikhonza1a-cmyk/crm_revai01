@@ -1,3 +1,4 @@
+import nodemailer from "nodemailer";
 import { loadConfig } from "@/config/app.config";
 import { logger } from "@/shared/logger";
 import type { EmailProvider } from "./email.port";
@@ -11,17 +12,34 @@ const consoleAdapter: EmailProvider = {
 };
 
 /**
- * Factory dle EMAIL_PROVIDER. smtp/gmail/outlook se doplní ve fázi 1–3.
- * outlook.adapter je placeholder (interface od začátku).
+ * SMTP adapter (nodemailer). SMTP_URL např.:
+ *  - Gmail/Workspace: smtps://uzivatel%40domena.cz:APP_HESLO@smtp.gmail.com:465
+ *  - Seznam/jiný SMTP: smtps://user:pass@smtp.provider.cz:465
+ * SMTP_FROM = hlavička odesílatele ("revai CRM <info@…>"), jinak se použije SMTP uživatel.
  */
+function smtpAdapter(url: string, from?: string): EmailProvider {
+  const transporter = nodemailer.createTransport(url);
+  return {
+    async send(msg) {
+      const info = await transporter.sendMail({
+        from, to: msg.to.join(", "), subject: msg.subject, html: msg.html, replyTo: msg.replyTo,
+      });
+      return { messageId: String(info.messageId ?? "") };
+    },
+  };
+}
+
+/** Factory dle EMAIL_PROVIDER. gmail/outlook API sync = fáze 3 (odchozí pošta jde přes SMTP). */
 export function resolveEmailProvider(): EmailProvider {
-  const { EMAIL_PROVIDER } = loadConfig();
-  switch (EMAIL_PROVIDER) {
-    case "console": return consoleAdapter;
-    // case "smtp": return smtpAdapter();
-    // case "gmail": return gmailAdapter();
-    // case "outlook": return outlookAdapter();  // placeholder
-    default: return consoleAdapter;
+  const cfg = loadConfig();
+  switch (cfg.EMAIL_PROVIDER) {
+    case "smtp":
+      if (cfg.SMTP_URL) return smtpAdapter(cfg.SMTP_URL, cfg.SMTP_FROM);
+      logger.warn("EMAIL_PROVIDER=smtp, ale chybí SMTP_URL — používám console adapter");
+      return consoleAdapter;
+    case "console":
+    default:
+      return consoleAdapter;
   }
 }
 

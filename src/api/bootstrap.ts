@@ -15,7 +15,7 @@ export function bootstrap(): void {
   done = true;
   registerProjectWorkflows();       // W2: deal.won → projekt draft
 
-  // Won deal → okamžitá chat notifikace adminům (kategorie deal_won, viz config/notification-rules.json)
+  // Won deal → okamžitá chat notifikace adminům (kategorie deal_won, viz config/notification-rules.ts)
   eventBus.subscribe("deal.won", async (e) => {
     const deal = await dealRepository.getById(e.dealId);
     await notifications.notify({

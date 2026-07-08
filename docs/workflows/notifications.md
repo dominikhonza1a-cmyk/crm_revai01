@@ -2,7 +2,7 @@
 
 ## Princip
 Kritické události jdou **okamžitě** (chat + email), běžné se agregují do **denního digestu**. Vše je
-per-user přenastavitelné (`NotificationPreference`). Výchozí mapování: [../../config/notification-rules.json](../../config/notification-rules.json).
+per-user přenastavitelné (`NotificationPreference`). Výchozí mapování: [../../config/notification-rules.ts](../../config/notification-rules.ts).
 
 ## Severity a kanály (default)
 

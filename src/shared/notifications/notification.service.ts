@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, inArray } from "drizzle-orm";
-import rules from "@/config/notification-rules.json" with { type: "json" };
+import { notificationRules as rules } from "@/config/notification-rules";
 import { db } from "@/shared/db";
 import { currentWorkspaceId } from "@/shared/tenant-context";
 import { logger } from "@/shared/logger";
@@ -26,7 +26,7 @@ export interface NotifyInput {
   sourceId?: string;
 }
 
-const CFG = rules.categories as Record<string, { channels: string[]; mode: "immediate" | "daily_digest" }>;
+const CFG: Record<string, { channels: readonly string[]; mode: "immediate" | "daily_digest" }> = rules.categories;
 
 export const notifications = {
   async notify(input: NotifyInput): Promise<void> {
