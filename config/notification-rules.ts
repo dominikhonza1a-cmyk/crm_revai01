@@ -5,8 +5,8 @@
 export const notificationRules = {
   categories: {
     sla_breach: { severity: "critical", channels: ["chat", "email"], mode: "immediate" },
-    sla_warning: { severity: "critical", channels: ["chat"], mode: "immediate" },
-    deal_won: { severity: "critical", channels: ["chat"], mode: "immediate" },
+    sla_warning: { severity: "critical", channels: ["chat", "email"], mode: "immediate" },
+    deal_won: { severity: "critical", channels: ["chat", "email"], mode: "immediate" },
     task_assigned: { severity: "normal", channels: ["email"], mode: "daily_digest" },
     task_overdue: { severity: "normal", channels: ["chat", "email"], mode: "immediate" },
     deal_stage: { severity: "normal", channels: ["email"], mode: "daily_digest" },

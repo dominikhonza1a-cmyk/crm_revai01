@@ -1,6 +1,10 @@
-# Integrace — Chat webhook (Slack / Teams)
+# Integrace — Chat webhook (Slack / Teams) — VOLITELNÉ
 
-**MVP scope:** jednoduchý **odchozí** webhook pro notifikace (eskalace, SLA, won deal). Plný Slack/Teams app
+**Rozhodnutí (červenec 2026):** notifikace zatím chodí **jen e-mailem** (SendGrid). Slack webhook je
+**volitelné rozšíření** — kód je hotový, aktivace = vytvořit Incoming Webhook ve Slack workspace (free plán
+stačí) a nastavit `CHAT_PROVIDER=webhook` + `CHAT_WEBHOOK_URL` v env. Do té doby jde chat kanál do console logu.
+
+**Scope:** jednoduchý **odchozí** webhook pro notifikace (eskalace, SLA, won deal). Plný Slack/Teams app
 (interaktivní, obousměrný) = fáze 3.
 
 ## Adapter `ChatNotifier` (`src/adapters/chat/chat.port.ts`)

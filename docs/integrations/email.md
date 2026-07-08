@@ -1,7 +1,21 @@
-# Integrace — Email (Gmail / Outlook)
+# Integrace — Email
 
-**MVP scope:** odchozí připomínky/notifikace vždy (SMTP/Gmail API); logování komunikace ke klientovi/dealu.
-Plný obousměrný sync schránky = fáze 3.
+**MVP scope:** odchozí notifikace + denní digest přes SMTP. Logování komunikace / obousměrný sync = fáze 3.
+
+## Odchozí e-maily přes SendGrid (zvolené řešení)
+
+Účet SendGrid existuje, odesílatel `info@automatizace-ai.cz` je ověřený. Nastavení:
+1. SendGrid → **Settings → API Keys → Create API Key** → název `revai CRM`, oprávnění **Restricted Access**
+   → zapnout jen **Mail Send** → Create → zkopírovat klíč (`SG.…` — zobrazí se jen jednou).
+2. Env proměnné (lokálně v `.env` i v Netlify → Environment variables):
+   ```
+   EMAIL_PROVIDER=smtp
+   SMTP_URL=smtps://apikey:SG.TVUJ_KLIC@smtp.sendgrid.net:465
+   SMTP_FROM=revai CRM <info@automatizace-ai.cz>
+   ```
+   (uživatelské jméno je doslova `apikey`, heslo je API klíč; SMTP_URL označit v Netlify jako secret)
+3. Netlify → **Trigger deploy**, aby se env propsaly.
+4. Ověření: vyřeš/zmeškej úkol nebo vyhraj deal → e-mail dorazí na adresu uživatele v CRM.
 
 ## Adapter `EmailProvider` (`src/adapters/email/email.port.ts`)
 ```ts

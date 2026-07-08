@@ -21,3 +21,5 @@ export * from "@/modules/tasks/task.entity";
 export * from "@/modules/documents/document.entity";
 // 0006 — notifikace
 export * from "@/shared/notifications/notification.entity";
+// 0007 — GDPR
+export * from "@/shared/gdpr/gdpr.entity";
