@@ -1,22 +1,29 @@
 import { loadConfig } from "@/config/app.config";
 import { logger } from "@/shared/logger";
-import type { ChatNotifier } from "./chat.port";
+import type { ChatNotifier, ChatMessage } from "./chat.port";
 
 const consoleAdapter: ChatNotifier = {
   async postMessage(target, msg) {
-    logger.info("[chat:console] post", { channel: target.channel, title: msg.title });
+    logger.info("[chat:console] post", { channel: target.channel, title: msg.title, body: msg.body, link: msg.link });
   },
 };
 
 /**
- * Webhook adapter — POST na CHAT_WEBHOOK_URL. Formatter podle cíle (Slack blocks vs. Teams cards).
- * Předpoklad: default Slack incoming webhook; Teams zapneš přepnutím formatteru (volba nepotvrzena).
+ * Generický incoming webhook (Slack formát `{text}` — funguje na free plánu, 1 z 10 povolených aplikací).
+ * Teams/Discord = jiný formatter, doplní se podle potřeby.
  */
 function webhookAdapter(url: string): ChatNotifier {
   return {
-    async postMessage(_target, msg) {
-      void url; void msg;
-      throw new Error("chat:webhook: implementace fáze 1 (fetch POST + Slack/Teams formatter).");
+    async postMessage(_target, msg: ChatMessage) {
+      const lines = [`*${msg.title}*`];
+      if (msg.body) lines.push(msg.body);
+      if (msg.link) lines.push(`<${msg.link}|Otevřít v CRM>`);
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ text: lines.join("\n") }),
+      });
+      if (!res.ok) throw new Error(`Chat webhook selhal: HTTP ${res.status}`);
     },
   };
 }

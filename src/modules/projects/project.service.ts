@@ -38,16 +38,17 @@ export const projectService = {
     const inserted = await projectRepository.insertPhases(project.id, phases);
     if (inserted[0]) await projectRepository.setCurrentPhaseNoActivate(project.id, inserted[0].id);
 
-    // W3: provisioning delivery tasků ze šablony (recurring master tasky retaineru se materializují až ve fázi 2)
+    // W3: provisioning tasků ze šablony. Recurring šablony (retainer) → master task s recurrence_rule;
+    // instance pak materializuje job W7 (runRecurringTasks) v klouzavém okně.
     if (template) {
       const taskTpls = await projectTemplateRepository.listTaskTemplates(template.id);
       const phaseIdByKey = new Map(inserted.map((p) => [p.key, p.id]));
       const base = project.startDate ? new Date(project.startDate) : new Date();
       for (const tt of taskTpls) {
-        if (tt.recurrenceRule) continue;
         await taskRepository.create({
           type: "delivery", title: tt.title, projectId: project.id, phaseId: phaseIdByKey.get(tt.phaseKey) ?? null,
-          dueAt: new Date(base.getTime() + tt.offsetDays * 86_400_000), createdBy: ctx.userId,
+          dueAt: new Date(base.getTime() + tt.offsetDays * 86_400_000),
+          recurrenceRule: tt.recurrenceRule ?? null, createdBy: ctx.userId,
         });
       }
     }

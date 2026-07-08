@@ -19,3 +19,5 @@ export * from "@/modules/activities/activity.entity";
 export * from "@/modules/tasks/task.entity";
 // 0005 — dokumenty
 export * from "@/modules/documents/document.entity";
+// 0006 — notifikace
+export * from "@/shared/notifications/notification.entity";

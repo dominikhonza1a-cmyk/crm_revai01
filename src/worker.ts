@@ -1,36 +1,49 @@
-/**
- * Entrypoint WORKER procesu (druhý proces ze stejného image jako web).
- * Zodpovědnosti:
- *  - outbox dispatcher: čte transactional outbox → doručuje eventy subscriberům + workflow enginu
- *  - scheduler (pg-boss): registruje cron joby (overdue W4, SLA W5, recurring W7, account review W6,
- *    stale deals W8, denní digest, retention review)
- *  - graceful shutdown
- */
-import { scheduler, CRON_JOBS } from "@/shared/scheduler";
+import PgBoss from "pg-boss";
+import { loadConfig } from "@/config/app.config";
 import { logger } from "@/shared/logger";
+import { bootstrap } from "@/api/bootstrap";
+import { runSlaEscalation, runOverdueTasks, runRecurringTasks, runStaleDeals, runDailyDigest, runDispatchPending } from "@/workflows/jobs";
 
-async function bootstrap(): Promise<void> {
-  logger.info("worker: start");
+/**
+ * WORKER proces (druhý proces vedle webu, `npm run worker`).
+ * pg-boss = cron + fronty + retry NAD stejným PostgreSQL (Supabase) — žádný Redis.
+ * Připojuje se přes DIRECT_URL (session pooler); transaction pooler pg-boss nepodporuje.
+ */
+const JOBS: { name: string; cron: string; run: () => Promise<unknown> }[] = [
+  { name: "sla-escalation", cron: "*/5 * * * *", run: () => runSlaEscalation() },    // W5 — každých 5 min
+  { name: "overdue-tasks", cron: "*/15 * * * *", run: () => runOverdueTasks() },     // W4 — každých 15 min
+  { name: "recurring-tasks", cron: "0 6 * * *", run: () => runRecurringTasks() },    // W7 — denně 6:00
+  { name: "stale-deals", cron: "0 2 * * *", run: () => runStaleDeals() },            // W8 — noční
+  { name: "daily-digest", cron: "0 7 * * *", run: () => runDailyDigest() },          // digest — 7:00
+  { name: "dispatch-pending", cron: "*/10 * * * *", run: () => runDispatchPending() }, // retry nedoručených
+];
 
-  // 1) registrace modulových subscriberů (event bus)
-  //    registerActivityWorkflows(); registerProjectWorkflows(); ...
+async function main(): Promise<void> {
+  const cfg = loadConfig();
+  bootstrap(); // event subscriby (W2 deal.won → projekt) i ve workeru
 
-  // 2) cron joby
-  await scheduler.schedule("overdue-tasks", CRON_JOBS.overdueTasks, async () => {/* W4 */});
-  await scheduler.schedule("sla-escalation", CRON_JOBS.slaEscalation, async () => {/* W5 */});
-  await scheduler.schedule("recurring-tasks", CRON_JOBS.recurringTasks, async () => {/* W7 */});
-  await scheduler.schedule("account-review", CRON_JOBS.accountReview, async () => {/* W6 */});
-  await scheduler.schedule("stale-deals", CRON_JOBS.staleDeals, async () => {/* W8 */});
-  await scheduler.schedule("daily-digest", CRON_JOBS.dailyDigest, async () => {/* digest */});
-  await scheduler.schedule("retention-review", CRON_JOBS.retentionReview, async () => {/* GDPR */});
+  const boss = new PgBoss({ connectionString: cfg.DIRECT_URL, schema: "pgboss" });
+  boss.on("error", (err) => logger.error("pg-boss error", { err: String(err) }));
+  await boss.start();
 
-  // 3) outbox dispatcher (poll/notify → eventBus.dispatch)
+  for (const job of JOBS) {
+    await boss.createQueue(job.name).catch(() => { /* queue už existuje */ });
+    await boss.schedule(job.name, job.cron, undefined, { tz: cfg.DEFAULT_TIMEZONE });
+    await boss.work(job.name, async () => {
+      logger.info(`job start: ${job.name}`);
+      await job.run();
+      logger.info(`job done: ${job.name}`);
+    });
+  }
 
-  await scheduler.start();
-  logger.info("worker: ready");
+  logger.info("worker: ready", { jobs: JOBS.map((j) => j.name) });
+
+  const shutdown = async () => { logger.info("worker: stopping"); await boss.stop(); process.exit(0); };
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
 }
 
-bootstrap().catch((err) => {
+main().catch((err) => {
   logger.error("worker: bootstrap failed", { err: String(err) });
-  process.exitCode = 1;
+  process.exit(1);
 });

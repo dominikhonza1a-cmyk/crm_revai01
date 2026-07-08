@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, eq, isNull, desc, inArray } from "drizzle-orm";
+import { and, eq, isNull, isNotNull, desc, inArray, lt, max } from "drizzle-orm";
 import { db } from "@/shared/db";
 import { currentWorkspaceId } from "@/shared/tenant-context";
 import { clampLimit, type Page } from "@/shared/pagination";
@@ -64,5 +64,40 @@ export const taskRepository = {
   async softDelete(id: string): Promise<void> {
     const ws = currentWorkspaceId();
     await db().update(tasks).set({ deletedAt: new Date() }).where(and(eq(tasks.id, id), eq(tasks.workspaceId, ws)));
+  },
+
+  /** Overdue: po termínu a stále otevřené (waiting_on_client se nepočítá — hodiny stojí). W4. */
+  async listOverdue(now: Date): Promise<TaskRow[]> {
+    const ws = currentWorkspaceId();
+    return db().select().from(tasks).where(and(
+      eq(tasks.workspaceId, ws), isNull(tasks.deletedAt), lt(tasks.dueAt, now),
+      inArray(tasks.status, ["todo", "in_progress", "blocked"]),
+    ));
+  },
+
+  /** Recurrence masters (mají rule, nejsou instance). W7. */
+  async listRecurrenceMasters(): Promise<TaskRow[]> {
+    const ws = currentWorkspaceId();
+    return db().select().from(tasks).where(and(
+      eq(tasks.workspaceId, ws), isNull(tasks.deletedAt),
+      isNotNull(tasks.recurrenceRule), isNull(tasks.recurrenceParentId),
+    ));
+  },
+
+  /** Nejpozdější due existující instance masteru (kotva pro generátor). */
+  async latestInstanceDue(masterId: string): Promise<Date | null> {
+    const row = (await db().select({ m: max(tasks.dueAt) }).from(tasks)
+      .where(eq(tasks.recurrenceParentId, masterId)))[0];
+    return row?.m ?? null;
+  },
+
+  /** Idempotentní vytvoření instance recurring tasku — unique (recurrence_parent_id, due_at). */
+  async insertRecurrenceInstance(master: TaskRow, dueAt: Date): Promise<void> {
+    await db().insert(tasks).values({
+      id: randomUUID(), workspaceId: master.workspaceId, type: master.type, title: master.title,
+      projectId: master.projectId, organizationId: master.organizationId, phaseId: master.phaseId,
+      description: master.description, priority: master.priority, assigneeId: master.assigneeId,
+      dueAt, recurrenceParentId: master.id,
+    }).onConflictDoNothing();
   },
 };

@@ -100,4 +100,19 @@ export const dealRepository = {
     await db().update(deals).set({ createdProjectId: projectId, updatedAt: new Date() })
       .where(and(eq(deals.id, dealId), eq(deals.workspaceId, ws)));
   },
+
+  /** Stale dealy (W8): otevřená fáze se stale_after_days, deal v ní stojí déle než limit. */
+  async listStale(now: Date): Promise<{ deal: DealRow; stageName: string; daysInStage: number }[]> {
+    const ws = currentWorkspaceId();
+    const rows = await db().select({ deal: deals, stageName: pipelineStages.name, staleAfterDays: pipelineStages.staleAfterDays })
+      .from(deals)
+      .innerJoin(pipelineStages, eq(deals.pipelineStageId, pipelineStages.id))
+      .where(and(eq(deals.workspaceId, ws), isNull(deals.deletedAt), eq(pipelineStages.kind, "open")));
+    return rows.flatMap((r) => {
+      if (r.staleAfterDays == null) return [];
+      const anchor = r.deal.lastActivityAt ?? r.deal.stageEnteredAt;
+      const days = Math.floor((now.getTime() - anchor.getTime()) / 86_400_000);
+      return days > r.staleAfterDays ? [{ deal: r.deal, stageName: r.stageName, daysInStage: days }] : [];
+    });
+  },
 };

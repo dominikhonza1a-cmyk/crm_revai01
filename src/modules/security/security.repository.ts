@@ -1,11 +1,13 @@
 import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/shared/db";
+import { currentWorkspaceId } from "@/shared/tenant-context";
 import { appUsers, roles, userRoles } from "./security.entity";
 
 /** Repository security modulu. Čte role uživatele pro výpočet efektivních oprávnění. */
 export interface SecurityRepository {
   listRolesForUser(userId: string): Promise<{ key: string; permissions: Record<string, string>; fieldPolicies: Record<string, string>; exports: string[] }[]>;
   findUserByEmail(email: string): Promise<{ id: string; workspaceId: string } | null>;
+  listAdminUserIds(): Promise<string[]>;
   anonymizeUser(userId: string): Promise<void>;
 }
 
@@ -28,6 +30,16 @@ export const securityRepository: SecurityRepository = {
     const row = (await db().select({ id: appUsers.id, workspaceId: appUsers.workspaceId })
       .from(appUsers).where(and(eq(appUsers.email, email), isNull(appUsers.anonymizedAt))).limit(1))[0];
     return row ?? null;
+  },
+
+  /** ID uživatelů s rolí admin (příjemci eskalací a won dealů). */
+  async listAdminUserIds() {
+    const ws = currentWorkspaceId();
+    const rows = await db().select({ userId: userRoles.userId })
+      .from(userRoles)
+      .innerJoin(roles, eq(userRoles.roleId, roles.id))
+      .where(and(eq(userRoles.workspaceId, ws), eq(roles.key, "admin")));
+    return rows.map((r) => r.userId);
   },
 
   async anonymizeUser(_userId) {

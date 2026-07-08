@@ -42,6 +42,13 @@ export const slaRepository = {
       .where(and(eq(slaTrackers.workspaceId, ws), eq(slaTrackers.entityType, entityType), eq(slaTrackers.entityId, entityId)));
   },
 
+  /** Běžící trackery (running) — vstup pro eskalační job (W5). */
+  async listRunning(): Promise<SlaTrackerRow[]> {
+    const ws = currentWorkspaceId();
+    return db().select().from(slaTrackers)
+      .where(and(eq(slaTrackers.workspaceId, ws), eq(slaTrackers.status, "running")));
+  },
+
   async setStatus(id: string, patch: Partial<Pick<SlaTrackerRow, "status" | "satisfiedAt" | "breachedAt" | "pausedAt" | "pausedTotalMs" | "escalationLevel" | "lastEscalatedAt">>): Promise<void> {
     const ws = currentWorkspaceId();
     await db().update(slaTrackers).set({ ...patch, updatedAt: new Date() })
