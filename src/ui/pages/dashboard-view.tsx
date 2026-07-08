@@ -30,13 +30,13 @@ export function DashboardView({ data }: { data: DashboardData }) {
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Link href="/tasks"><StatCard label="Moje práce" value={data.myWork.count} hint="otevřené úkoly" tone="accent" icon={<I d={<><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></>} />} /></Link>
-        <StatCard label="Win-rate" value={data.win.winRatePct != null ? `${data.win.winRatePct}%` : "—"} hint={`vyhráno ${data.win.won} · prohráno ${data.win.lost}`} tone="blue" icon={<I d={<><circle cx="12" cy="8" r="6" /><path d="M15.5 13.5 17 22l-5-3-5 3 1.5-8.5" /></>} />} />
+        <StatCard label="Win-rate" value={data.win.winRatePct != null ? `${data.win.winRatePct}%` : "—"} hint={`vyhráno ${data.win.won} · prohráno ${data.win.lost}`} tone="blue" doodle="/doodles/trophy.png" icon={<I d={<><circle cx="12" cy="8" r="6" /><path d="M15.5 13.5 17 22l-5-3-5 3 1.5-8.5" /></>} />} />
         <Link href="/tasks"><StatCard label="Po termínu" value={data.overdue.count} hint="overdue úkoly" tone="amber" icon={<I d={<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>} />} /></Link>
         <Link href="/deals"><StatCard label="Pipeline value" value={money(totalPipeline)} hint="otevřené dealy" tone="pink" icon={<I d={<><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></>} />} /></Link>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 pb-14" doodle="/doodles/rocket.png" doodlePos="br">
           <SectionTitle right={<Link href="/deals" className="text-xs font-medium text-accent hover:underline">Otevřít pipeline →</Link>}>Pipeline po fázích</SectionTitle>
           <div className="space-y-3.5">
             {data.pipeline.map((p) => (
@@ -53,7 +53,7 @@ export function DashboardView({ data }: { data: DashboardData }) {
           </div>
         </Card>
 
-        <Card>
+        <Card doodle="/doodles/folder.png">
           <SectionTitle>Stav projektů</SectionTitle>
           {totalProjects === 0 ? <Empty>Zatím žádné projekty</Empty> : (
             <div className="flex items-center gap-5">
@@ -78,9 +78,9 @@ export function DashboardView({ data }: { data: DashboardData }) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
+        <Card doodle="/doodles/headset.png">
           <SectionTitle>Otevřené tickety</SectionTitle>
-          {data.tickets.length === 0 ? <Empty>Žádné otevřené tickety 🎉</Empty> : (
+          {data.tickets.length === 0 ? <Empty doodle={null}>Žádné otevřené tickety 🎉</Empty> : (
             <div className="space-y-2">
               {data.tickets.map((t) => (
                 <div key={t.priority} className="flex items-center justify-between rounded-xl px-3 py-2 hover:bg-white/5">
@@ -92,9 +92,9 @@ export function DashboardView({ data }: { data: DashboardData }) {
           )}
         </Card>
 
-        <Card>
+        <Card doodle="/doodles/chart.png">
           <SectionTitle>Revenue / klient</SectionTitle>
-          {data.revenue.length === 0 ? <Empty doodle="/doodles/chart.png">Zatím žádné vyhrané dealy</Empty> : (
+          {data.revenue.length === 0 ? <Empty doodle={null}>Zatím žádné vyhrané dealy</Empty> : (
             <div className="space-y-2">
               {data.revenue.map((r) => (
                 <div key={r.organization} className="flex items-center justify-between rounded-xl px-3 py-2 hover:bg-white/5">

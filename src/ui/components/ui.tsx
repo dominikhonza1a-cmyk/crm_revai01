@@ -2,23 +2,32 @@ import type { ReactNode } from "react";
 
 /** Znovupoužitelné UI prvky — tmavý motiv, mint/emerald akcent. */
 
-export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-2xl border border-line bg-surface p-5 ${className}`}>{children}</div>;
+export function Card({ children, className = "", doodle, doodlePos = "tr" }: { children: ReactNode; className?: string; doodle?: string; doodlePos?: "tr" | "br" }) {
+  return (
+    <div className={`relative rounded-2xl border border-line bg-surface p-5 ${className}`}>
+      {doodle && (
+        <img src={doodle} alt="" width={80} height={80}
+          className={`pointer-events-none absolute select-none opacity-95 ${doodlePos === "tr" ? "right-2 top-0" : "bottom-0 right-2"}`} />
+      )}
+      {children}
+    </div>
+  );
 }
 
-export function StatCard({ label, value, hint, icon, tone = "accent" }: { label: string; value: ReactNode; hint?: string; icon?: ReactNode; tone?: "accent" | "amber" | "blue" | "pink" }) {
+export function StatCard({ label, value, hint, icon, tone = "accent", doodle }: { label: string; value: ReactNode; hint?: string; icon?: ReactNode; tone?: "accent" | "amber" | "blue" | "pink"; doodle?: string }) {
   const iconBg: Record<string, string> = {
     accent: "bg-accent-soft text-accent", amber: "bg-amber-400/10 text-amber-400",
     blue: "bg-sky-400/10 text-sky-400", pink: "bg-pink-400/10 text-pink-400",
   };
   return (
-    <div className="rounded-2xl border border-line bg-surface p-5 transition-colors hover:border-accent/40">
+    <div className="relative rounded-2xl border border-line bg-surface p-5 transition-colors hover:border-accent/40">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-muted">{label}</span>
         {icon && <span className={`grid h-9 w-9 place-items-center rounded-xl ${iconBg[tone]}`}>{icon}</span>}
       </div>
       <div className="mt-3 font-display text-4xl tracking-wide text-ink">{value}</div>
       {hint && <div className="mt-1 text-xs text-faint">{hint}</div>}
+      {doodle && <img src={doodle} alt="" width={52} height={52} className="pointer-events-none absolute bottom-2 right-3 select-none opacity-90" />}
     </div>
   );
 }
