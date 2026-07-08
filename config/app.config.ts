@@ -28,6 +28,7 @@ const EnvSchema = z.object({
   SMTP_URL: z.string().optional(),
   SMTP_FROM: z.string().optional(),          // např. "revai CRM <info@automatizace-ai.cz>"
   CRON_SECRET: z.string().optional(),        // ochrana /api/jobs (Netlify cron funkce)
+  GITHUB_WEBHOOK_SECRET: z.string().optional(),  // ověření podpisu GitHub webhooků (git → timeline)
   CHAT_PROVIDER: z.enum(["console", "webhook"]).default("console"),
   CHAT_WEBHOOK_URL: z.string().url().optional(),
   STORAGE_PROVIDER: z.enum(["link", "supabase", "s3"]).default("link"),

@@ -81,6 +81,19 @@ export const projectRepository = {
       .where(and(eq(projects.id, projectId), eq(projects.workspaceId, ws)));
   },
 
+  /** Upsert jednoho klíče v custom_fields (např. git_repo). null = odstranit. */
+  async setCustomField(projectId: string, key: string, value: unknown | null): Promise<ProjectRow> {
+    const ws = currentWorkspaceId();
+    const p = await this.getById(projectId);
+    if (!p) throw new Error("Projekt nenalezen");
+    const cf = { ...(p.customFields as Record<string, unknown>) };
+    if (value === null || value === "") delete cf[key];
+    else cf[key] = value;
+    await db().update(projects).set({ customFields: cf, updatedAt: new Date() })
+      .where(and(eq(projects.id, projectId), eq(projects.workspaceId, ws)));
+    return (await this.getById(projectId))!;
+  },
+
   async setStatus(projectId: string, status: string): Promise<ProjectRow> {
     const ws = currentWorkspaceId();
     await db().update(projects).set({ status, updatedAt: new Date() })

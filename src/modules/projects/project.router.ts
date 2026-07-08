@@ -2,6 +2,7 @@ import { z } from "zod";
 import { router, protectedProcedure, requirePermission } from "@/api/trpc";
 import { advancePhaseSchema, changeStatusSchema } from "./project.validation";
 import { projectService } from "./project.service";
+import { projectRepository } from "./project.repository";
 
 const idInput = z.object({ id: z.string().uuid() });
 const listInput = z.object({
@@ -28,4 +29,12 @@ export const projectsRouter = router({
   // draft → active potvrzuje PM ("Confirm draft"), i on_hold/closed
   changeStatus: protectedProcedure.use(requirePermission("projects", "manage"))
     .input(changeStatusSchema).mutation(({ ctx, input }) => projectService.changeStatus(ctx, input)),
+
+  // Git integrace: mapování GitHub repa (owner/repo) na projekt — webhooky pak píšou do timeline
+  setGitRepo: protectedProcedure.use(requirePermission("projects", "write"))
+    .input(z.object({
+      projectId: z.string().uuid(),
+      repo: z.string().regex(/^[\w.-]+\/[\w.-]+$/, "Formát: owner/repo").nullable(),
+    }))
+    .mutation(({ input }) => projectRepository.setCustomField(input.projectId, "git_repo", input.repo)),
 });
