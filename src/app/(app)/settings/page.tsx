@@ -4,6 +4,7 @@ import { trpc } from "@/ui/trpc";
 import { Card, Badge, SectionTitle, Loading } from "@/ui/components/ui";
 import { MfaSetup } from "@/ui/components/mfa-setup";
 import { GdprSection } from "@/ui/components/gdpr-section";
+import { ApiKeysSection } from "@/ui/components/api-keys-section";
 
 const MODULE_LABEL: Record<string, string> = {
   organizations: "Klienti", contacts: "Kontakty", deals: "Obchod", projects: "Projekty",
@@ -38,6 +39,8 @@ export default function SettingsPage() {
       </Card>
 
       <MfaSetup />
+
+      <ApiKeysSection />
 
       <GdprSection />
 
