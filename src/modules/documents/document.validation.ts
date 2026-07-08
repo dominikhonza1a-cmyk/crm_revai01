@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { urlish } from "@/shared/validation";
 
 /** CHECK v datech (kind=secret_ref ⇒ external_url prázdné) je vynucen i tady na úrovni validace. */
 export const documentCreateSchema = z.object({
@@ -8,7 +9,7 @@ export const documentCreateSchema = z.object({
   entityId: z.string().uuid(),
   docCategory: z.enum(["contract", "proposal", "spec", "credentials_ref", "deliverable", "other"]),
   storageProvider: z.enum(["gdrive", "sharepoint", "url", "local"]).optional(),
-  externalUrl: z.string().url().optional(),
+  externalUrl: urlish.optional(),
   secretLocation: z.string().max(500).optional(),
   secretPolicyNote: z.string().max(1000).optional(),
   containsPii: z.boolean().default(false),

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { trpc } from "@/ui/trpc";
-import { Modal, fieldInput, fieldLabel, btnPrimary, btnGhost } from "./ui";
+import { Modal, fieldInput, fieldLabel, btnPrimary, btnGhost, formatError } from "./ui";
 
 /** Nový klient. */
 export function NewClientModal({ onClose }: { onClose: () => void }) {
@@ -19,7 +19,7 @@ export function NewClientModal({ onClose }: { onClose: () => void }) {
     <Modal title="Nový klient" onClose={onClose}>
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); create.mutate({ name, website: website || undefined, lifecycleStage: lifecycleStage as never, industry: industry || undefined }); }}>
         <div><label className={fieldLabel}>Název *</label><input className={fieldInput} value={name} onChange={(e) => setName(e.target.value)} required autoFocus /></div>
-        <div><label className={fieldLabel}>Web</label><input className={fieldInput} value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://…" /></div>
+        <div><label className={fieldLabel}>Web</label><input className={fieldInput} value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="www.firma.cz (https:// doplníme)" /></div>
         <div className="grid grid-cols-2 gap-3">
           <div><label className={fieldLabel}>Stav</label>
             <select className={fieldInput} value={lifecycleStage} onChange={(e) => setStage(e.target.value)}>
@@ -28,7 +28,7 @@ export function NewClientModal({ onClose }: { onClose: () => void }) {
           </div>
           <div><label className={fieldLabel}>Odvětví</label><input className={fieldInput} value={industry} onChange={(e) => setIndustry(e.target.value)} /></div>
         </div>
-        {create.error && <p className="text-sm text-red-300">{create.error.message}</p>}
+        {create.error && <p className="text-sm text-red-300">{formatError(create.error.message)}</p>}
         <div className="flex justify-end gap-2 pt-2">
           <button type="button" className={btnGhost} onClick={onClose}>Zrušit</button>
           <button type="submit" className={btnPrimary} disabled={create.isPending}>{create.isPending ? "Ukládám…" : "Vytvořit"}</button>
@@ -76,7 +76,7 @@ export function NewDealModal({ onClose }: { onClose: () => void }) {
             </select>
           </div>
         </div>
-        {create.error && <p className="text-sm text-red-300">{create.error.message}</p>}
+        {create.error && <p className="text-sm text-red-300">{formatError(create.error.message)}</p>}
         <div className="flex justify-end gap-2 pt-2">
           <button type="button" className={btnGhost} onClick={onClose}>Zrušit</button>
           <button type="submit" className={btnPrimary} disabled={create.isPending || !organizationId}>{create.isPending ? "Ukládám…" : "Vytvořit"}</button>

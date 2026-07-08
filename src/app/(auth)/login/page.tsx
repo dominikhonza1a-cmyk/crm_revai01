@@ -51,7 +51,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="mb-6 flex items-center justify-center gap-2.5">
           <div className="grid h-11 w-11 place-items-center rounded-2xl bg-accent-strong text-lg font-bold text-[#08110c]">r</div>
-          <span className="text-xl font-semibold tracking-tight text-ink">revai CRM</span>
+          <span className="font-display text-3xl tracking-wider text-ink">REVAI CRM</span>
         </div>
         <div className="rounded-2xl border border-line bg-surface p-6 shadow-xl shadow-black/20">
           {!needsMfa ? (

@@ -3,6 +3,7 @@
 /* Design tokens — tmavý motiv, mint/emerald akcent (inspirace referencí). */
 @theme {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-bebas), "Bebas Neue", var(--font-inter), sans-serif;
 
   --color-bg: #0e1420;          /* pozadí aplikace */
   --color-surface: #182131;     /* karty */

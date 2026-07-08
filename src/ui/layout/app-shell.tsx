@@ -64,7 +64,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <aside className={`${collapsed ? "w-16" : "w-60"} flex flex-col border-r border-line bg-surface transition-all duration-200`}>
         <div className="flex h-16 items-center gap-2.5 px-4">
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent-strong font-bold text-[#08110c]">r</div>
-          {!collapsed && <span className="font-semibold tracking-tight text-ink">revai CRM</span>}
+          {!collapsed && <span className="font-display text-xl tracking-wider text-ink">REVAI CRM</span>}
         </div>
         <nav className="flex-1 space-y-1 px-2.5 py-2">
           {NAV.map((n) => {
@@ -87,7 +87,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Main */}
       <div className="flex flex-1 flex-col overflow-hidden">
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-line bg-surface/60 px-6">
-          <h1 className="text-lg font-semibold text-ink">{title}</h1>
+          <h1 className="font-display text-2xl tracking-wider text-ink">{title}</h1>
           <div className="flex items-center gap-4">
             <div className="relative">
               <button onClick={() => setMenuOpen((o) => !o)} className="flex items-center gap-1.5 rounded-xl bg-accent-strong px-3.5 py-2 text-sm font-semibold text-[#08110c] transition-all hover:brightness-110">

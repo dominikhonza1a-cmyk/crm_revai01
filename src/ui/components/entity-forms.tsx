@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { trpc } from "@/ui/trpc";
-import { Modal, fieldInput, fieldLabel, btnPrimary, btnGhost } from "./ui";
+import { Modal, fieldInput, fieldLabel, btnPrimary, btnGhost, formatError } from "./ui";
 
 type Host = "organization" | "contact" | "deal" | "project" | "task";
 
@@ -33,7 +33,7 @@ export function NewContactModal({ organizationId, onClose }: { organizationId: s
           <div><label className={fieldLabel}>Telefon</label><input className={fieldInput} value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
           <div><label className={fieldLabel}>Pozice</label><input className={fieldInput} value={jobTitle} onChange={(e) => setJob(e.target.value)} /></div>
         </div>
-        {create.error && <p className="text-sm text-red-300">{create.error.message}</p>}
+        {create.error && <p className="text-sm text-red-300">{formatError(create.error.message)}</p>}
         <div className="flex justify-end gap-2 pt-2">
           <button type="button" className={btnGhost} onClick={onClose}>Zrušit</button>
           <button type="submit" className={btnPrimary} disabled={create.isPending}>{create.isPending ? "Ukládám…" : "Vytvořit"}</button>
@@ -79,7 +79,7 @@ export function NewDocumentModal({ entityType, entityId, onClose }: { entityType
         <div><label className={fieldLabel}>Název *</label><input className={fieldInput} value={title} onChange={(e) => setTitle(e.target.value)} required autoFocus /></div>
         {kind === "external_ref" ? (
           <>
-            <div><label className={fieldLabel}>URL *</label><input className={fieldInput} type="url" value={externalUrl} onChange={(e) => setUrl(e.target.value)} placeholder="https://drive.google.com/…" required /></div>
+            <div><label className={fieldLabel}>URL *</label><input className={fieldInput} type="text" value={externalUrl} onChange={(e) => setUrl(e.target.value)} placeholder="drive.google.com/… (https:// doplníme)" required /></div>
             <div><label className={fieldLabel}>Kategorie</label>
               <select className={fieldInput} value={docCategory} onChange={(e) => setCategory(e.target.value)}>
                 <option value="contract">Smlouva</option><option value="proposal">Nabídka</option><option value="spec">Specifikace</option><option value="deliverable">Výstup</option><option value="other">Ostatní</option>
@@ -93,7 +93,7 @@ export function NewDocumentModal({ entityType, entityId, onClose }: { entityType
             <p className="mt-1.5 text-xs text-faint">Hodnota přístupů se do CRM nikdy neukládá — jen odkaz, kde je najdeš.</p>
           </div>
         )}
-        {link.error && <p className="text-sm text-red-300">{link.error.message}</p>}
+        {link.error && <p className="text-sm text-red-300">{formatError(link.error.message)}</p>}
         <div className="flex justify-end gap-2 pt-2">
           <button type="button" className={btnGhost} onClick={onClose}>Zrušit</button>
           <button type="submit" className={btnPrimary} disabled={link.isPending}>{link.isPending ? "Ukládám…" : "Přidat"}</button>
@@ -132,7 +132,7 @@ export function NewTaskModal({ projectId, onClose }: { projectId: string; onClos
           </div>
           <div><label className={fieldLabel}>Termín</label><input className={fieldInput} type="date" value={dueAt} onChange={(e) => setDueAt(e.target.value)} /></div>
         </div>
-        {create.error && <p className="text-sm text-red-300">{create.error.message}</p>}
+        {create.error && <p className="text-sm text-red-300">{formatError(create.error.message)}</p>}
         <div className="flex justify-end gap-2 pt-2">
           <button type="button" className={btnGhost} onClick={onClose}>Zrušit</button>
           <button type="submit" className={btnPrimary} disabled={create.isPending}>{create.isPending ? "Ukládám…" : "Vytvořit"}</button>
@@ -159,7 +159,7 @@ export function NewNoteModal({ entityType, entityId, onClose }: { entityType: Ho
       }}>
         <div><label className={fieldLabel}>Titulek *</label><input className={fieldInput} value={subject} onChange={(e) => setSubject(e.target.value)} required autoFocus /></div>
         <div><label className={fieldLabel}>Text</label><textarea className={`${fieldInput} min-h-24 resize-y`} value={body} onChange={(e) => setBody(e.target.value)} /></div>
-        {log.error && <p className="text-sm text-red-300">{log.error.message}</p>}
+        {log.error && <p className="text-sm text-red-300">{formatError(log.error.message)}</p>}
         <div className="flex justify-end gap-2 pt-2">
           <button type="button" className={btnGhost} onClick={onClose}>Zrušit</button>
           <button type="submit" className={btnPrimary} disabled={log.isPending}>{log.isPending ? "Ukládám…" : "Uložit"}</button>

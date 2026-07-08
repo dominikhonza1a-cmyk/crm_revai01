@@ -17,7 +17,7 @@ export function StatCard({ label, value, hint, icon, tone = "accent" }: { label:
         <span className="text-sm font-medium text-muted">{label}</span>
         {icon && <span className={`grid h-9 w-9 place-items-center rounded-xl ${iconBg[tone]}`}>{icon}</span>}
       </div>
-      <div className="mt-3 text-3xl font-semibold tracking-tight text-ink">{value}</div>
+      <div className="mt-3 font-display text-4xl tracking-wide text-ink">{value}</div>
       {hint && <div className="mt-1 text-xs text-faint">{hint}</div>}
     </div>
   );
@@ -109,3 +109,23 @@ export function money(minor: string | number | bigint | null | undefined, curren
   const n = Number(minor ?? 0) / 100;
   return `${n.toLocaleString("cs-CZ")} ${currency}`;
 }
+
+/** Převede tRPC/zod chybu na čitelnou větu (místo syrového JSON pole issues). */
+export function formatError(message: string | undefined | null): string {
+  if (!message) return "Neznámá chyba";
+  try {
+    const parsed = JSON.parse(message);
+    if (Array.isArray(parsed)) {
+      return parsed.map((i: { message?: string; path?: (string | number)[] }) => {
+        const field = i.path?.length ? FIELD_LABELS[String(i.path[0])] ?? String(i.path[0]) : null;
+        return field ? `${field}: ${i.message ?? "neplatná hodnota"}` : i.message ?? "neplatná hodnota";
+      }).join(" · ");
+    }
+  } catch { /* není JSON → vrátíme jak je */ }
+  return message;
+}
+
+const FIELD_LABELS: Record<string, string> = {
+  name: "Název", website: "Web", title: "Název", email: "E-mail", phone: "Telefon",
+  externalUrl: "URL", amountMinor: "Hodnota", dueAt: "Termín", firstName: "Jméno", lastName: "Příjmení",
+};

@@ -60,7 +60,7 @@ export function DashboardView({ data }: { data: DashboardData }) {
               <div className="relative shrink-0">
                 <Donut segments={donutSegs} />
                 <div className="absolute inset-0 grid place-items-center">
-                  <div className="text-center"><div className="text-2xl font-semibold text-ink">{totalProjects}</div><div className="text-xs text-faint">projektů</div></div>
+                  <div className="text-center"><div className="font-display text-3xl tracking-wide text-ink">{totalProjects}</div><div className="text-xs text-faint">projektů</div></div>
                 </div>
               </div>
               <div className="space-y-1.5">
