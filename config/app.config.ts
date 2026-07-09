@@ -29,6 +29,9 @@ const EnvSchema = z.object({
   SMTP_FROM: z.string().optional(),          // např. "revai CRM <info@automatizace-ai.cz>"
   CRON_SECRET: z.string().optional(),        // ochrana /api/jobs (Netlify cron funkce)
   GITHUB_WEBHOOK_SECRET: z.string().optional(),  // ověření podpisu GitHub webhooků (git → timeline)
+  GOOGLE_CLIENT_ID: z.string().optional(),       // OAuth client pro Gmail/Calendar sync (fáze 3)
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  TOKEN_ENCRYPTION_KEY: z.string().optional(),   // AES-GCM šifrování OAuth tokenů v DB
   CHAT_PROVIDER: z.enum(["console", "webhook"]).default("console"),
   CHAT_WEBHOOK_URL: z.string().url().optional(),
   STORAGE_PROVIDER: z.enum(["link", "supabase", "s3"]).default("link"),

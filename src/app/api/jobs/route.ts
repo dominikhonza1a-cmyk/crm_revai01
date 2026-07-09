@@ -1,6 +1,7 @@
 import { loadConfig } from "@/config/app.config";
 import { logger } from "@/shared/logger";
 import { runSlaEscalation, runOverdueTasks, runDispatchPending, runRecurringTasks, runStaleDeals, runDailyDigest } from "@/workflows/jobs";
+import { runGoogleSync } from "@/modules/integrations/google/google-sync.job";
 
 /**
  * Spouštěč automatizačních jobů přes HTTP — pro serverless nasazení (Netlify cron funkce).
@@ -22,6 +23,7 @@ export async function POST(req: Request): Promise<Response> {
       await runSlaEscalation();
       await runOverdueTasks();
       await runDispatchPending();
+      await runGoogleSync();
       break;
     case "daily":
       await runRecurringTasks();
