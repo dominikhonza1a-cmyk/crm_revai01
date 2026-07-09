@@ -7,6 +7,8 @@ import { trpc } from "@/ui/trpc";
 import { Card, Badge, Tabs, Loading, Empty, btnPrimary } from "@/ui/components/ui";
 import { TimelineTab, DocumentsTab } from "@/ui/components/entity-tabs";
 import { NewTaskModal, TaskStatusSelect } from "@/ui/components/entity-forms";
+import { TagPicker } from "@/ui/components/tag-picker";
+import { CustomFieldsCard } from "@/ui/components/custom-fields-card";
 
 const STATUS: Record<string, { label: string; tone: "slate" | "green" | "amber" }> = {
   draft: { label: "Draft", tone: "slate" }, active: { label: "Aktivní", tone: "green" },
@@ -39,6 +41,7 @@ export default function ProjectDetailPage() {
         <h1 className="text-2xl font-semibold text-ink">{p.name}</h1>
         {st && <Badge tone={st.tone}>{st.label}</Badge>}
         <span className="text-sm text-faint">{TYPE[p.projectType] ?? p.projectType} · {p.engagementType === "retainer" ? "Retainer" : "Jednorázový"}</span>
+        <TagPicker entityType="project" entityId={projectId} />
         <span className="flex-1" />
         {p.status === "draft" && (
           <button className={btnPrimary} disabled={changeStatus.isPending}
@@ -84,12 +87,15 @@ export default function ProjectDetailPage() {
 
       <Tabs tabs={TABS} active={tab} onChange={setTab} />
       {tab === "overview" && (
-        <Card><div className="space-y-2 text-sm">
-          <div className="flex justify-between"><span className="text-muted">Kód</span><span className="text-ink">{p.code ?? "—"}</span></div>
-          <div className="flex justify-between"><span className="text-muted">Start</span><span className="text-ink">{p.startDate ?? "—"}</span></div>
-          <div className="flex justify-between"><span className="text-muted">Typ zakázky</span><span className="text-ink">{p.engagementType === "retainer" ? "Retainer" : "Jednorázový"}</span></div>
-          <GitRepoRow projectId={projectId} current={(p.customFields as Record<string, unknown>)?.git_repo as string | undefined} />
-        </div></Card>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Card><div className="space-y-2 text-sm">
+            <div className="flex justify-between"><span className="text-muted">Kód</span><span className="text-ink">{p.code ?? "—"}</span></div>
+            <div className="flex justify-between"><span className="text-muted">Start</span><span className="text-ink">{p.startDate ?? "—"}</span></div>
+            <div className="flex justify-between"><span className="text-muted">Typ zakázky</span><span className="text-ink">{p.engagementType === "retainer" ? "Retainer" : "Jednorázový"}</span></div>
+            <GitRepoRow projectId={projectId} current={(p.customFields as Record<string, unknown>)?.git_repo as string | undefined} />
+          </div></Card>
+          <CustomFieldsCard entityType="project" entityId={projectId} values={(p.customFields ?? {}) as Record<string, unknown>} />
+        </div>
       )}
       {tab === "tasks" && <ProjectTasks projectId={projectId} />}
       {tab === "timeline" && <TimelineTab entityType="project" entityId={projectId} />}

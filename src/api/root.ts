@@ -11,6 +11,8 @@ import { reportingRouter } from "@/modules/reporting";
 import { gdprRouter } from "@/shared/gdpr/gdpr.router";
 import { securityRouter } from "@/modules/security/security.router";
 import { integrationsRouter } from "@/modules/integrations/google/google.router";
+import { tagsRouter } from "@/shared/tags/tag.router";
+import { customFieldsRouter } from "@/shared/custom-fields/custom-field.router";
 
 // zaregistruje event subscribery (W2: deal.won → projekt) jednou při načtení
 bootstrap();
@@ -41,6 +43,8 @@ export const appRouter = router({
   gdpr: gdprRouter,
   security: securityRouter,
   integrations: integrationsRouter,
+  tags: tagsRouter,
+  customFields: customFieldsRouter,
 });
 
 export type AppRouter = typeof appRouter;

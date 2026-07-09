@@ -7,6 +7,8 @@ import { trpc } from "@/ui/trpc";
 import { Card, Badge, Tabs, Loading, Empty, money } from "@/ui/components/ui";
 import { TimelineTab, DocumentsTab } from "@/ui/components/entity-tabs";
 import { NewContactModal } from "@/ui/components/entity-forms";
+import { TagPicker } from "@/ui/components/tag-picker";
+import { CustomFieldsCard } from "@/ui/components/custom-fields-card";
 
 const LIFECYCLE: Record<string, { label: string; tone: "slate" | "green" | "amber" | "blue" }> = {
   prospect: { label: "Prospekt", tone: "blue" }, active_client: { label: "Klient", tone: "green" },
@@ -33,6 +35,7 @@ export default function ClientDetailPage() {
         <Link href="/clients" className="grid h-8 w-8 place-items-center rounded-lg text-faint hover:bg-white/5 hover:text-ink">←</Link>
         <h1 className="text-2xl font-semibold text-ink">{o.name}</h1>
         {lc && <Badge tone={lc.tone}>{lc.label}</Badge>}
+        <TagPicker entityType="organization" entityId={orgId} />
       </div>
       <Tabs tabs={TABS} active={tab} onChange={setTab} />
 
@@ -44,6 +47,7 @@ export default function ClientDetailPage() {
             <Row label="Velikost" value={o.employeeBand ?? "—"} />
             <Row label="Zdroj" value={o.source ?? "—"} />
           </div></Card>
+          <CustomFieldsCard entityType="organization" entityId={orgId} values={(o.customFields ?? {}) as Record<string, unknown>} />
         </div>
       )}
       {tab === "projects" && <ProjectsTab orgId={orgId} />}

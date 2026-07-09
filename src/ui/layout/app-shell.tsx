@@ -7,12 +7,12 @@ import { createBrowserClient } from "@supabase/ssr";
 import { NewClientModal, NewDealModal } from "@/ui/components/create-modals";
 
 const NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: "grid" },
-  { href: "/clients", label: "Klienti", icon: "users" },
-  { href: "/deals", label: "Obchod", icon: "chart" },
-  { href: "/projects", label: "Projekty", icon: "folder" },
-  { href: "/tasks", label: "Úkoly", icon: "check" },
-  { href: "/settings", label: "Nastavení", icon: "gear" },
+  { href: "/dashboard", label: "Dashboard", icon: "grid", doodle: "/doodles/chart.png" },
+  { href: "/clients", label: "Klienti", icon: "users", doodle: "/doodles/pandulak.png" },
+  { href: "/deals", label: "Obchod", icon: "chart", doodle: "/doodles/icon-coins.png" },
+  { href: "/projects", label: "Projekty", icon: "folder", doodle: "/doodles/rocket.png" },
+  { href: "/tasks", label: "Úkoly", icon: "check", doodle: "/doodles/icon-tasks.png" },
+  { href: "/settings", label: "Nastavení", icon: "gear", doodle: "/doodles/robot.png" },
 ] as const;
 
 function Icon({ name, className = "" }: { name: string; className?: string }) {
@@ -56,7 +56,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   if (!ready) return <div className="grid h-screen place-items-center text-faint">Načítám…</div>;
 
-  const title = NAV.find((n) => pathname?.startsWith(n.href))?.label ?? "revai CRM";
+  const active = NAV.find((n) => pathname?.startsWith(n.href));
+  const title = active?.label ?? "revai CRM";
 
   return (
     <div className="flex h-screen bg-bg">
@@ -87,7 +88,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Main */}
       <div className="flex flex-1 flex-col overflow-hidden">
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-line bg-surface/60 px-6">
-          <h1 className="font-display text-2xl tracking-wider text-ink">{title}</h1>
+          <div className="flex items-center gap-2.5">
+            {active?.doodle && <img src={active.doodle} alt="" width={38} height={38} className="pointer-events-none select-none" />}
+            <h1 className="font-display text-2xl tracking-wider text-ink">{title}</h1>
+          </div>
           <div className="flex items-center gap-4">
             <div className="relative">
               <button onClick={() => setMenuOpen((o) => !o)} className="flex items-center gap-1.5 rounded-xl bg-accent-strong px-3.5 py-2 text-sm font-semibold text-[#08110c] transition-all hover:brightness-110">

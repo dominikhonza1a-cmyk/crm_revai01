@@ -7,6 +7,7 @@ import { GdprSection } from "@/ui/components/gdpr-section";
 import { ApiKeysSection } from "@/ui/components/api-keys-section";
 import { UsersSection } from "@/ui/components/users-section";
 import { GoogleSection } from "@/ui/components/google-section";
+import { CustomFieldsSection } from "@/ui/components/custom-fields-section";
 
 const MODULE_LABEL: Record<string, string> = {
   organizations: "Klienti", contacts: "Kontakty", deals: "Obchod", projects: "Projekty",
@@ -44,6 +45,8 @@ export default function SettingsPage() {
 
       <GoogleSection />
 
+      <CustomFieldsSection />
+
       <MfaSetup />
 
       <ApiKeysSection />
@@ -54,7 +57,7 @@ export default function SettingsPage() {
         <SectionTitle>Připravujeme</SectionTitle>
         <div className="flex items-center gap-4">
           <img src="/doodles/robot.png" alt="" width={84} height={84} className="shrink-0" />
-          <p className="text-sm text-muted">Custom fields a tagy v UI, Cmd+K hledání, notifikační preference — přidáme v dalších krocích.</p>
+          <p className="text-sm text-muted">Cmd+K hledání a notifikační preference — přidáme v dalších krocích.</p>
         </div>
       </Card>
     </div>
