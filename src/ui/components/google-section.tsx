@@ -35,6 +35,9 @@ export function GoogleSection() {
   });
 
   const s = status.data;
+  // zdvojený OAuth callback umí vrátit „error", i když se připojení napodruhé uložilo —
+  // pokud je účet reálně připojený, chybovou hlášku nezobrazuj
+  const visibleNotice = notice && !(s?.connected && notice.includes("selhalo")) ? notice : null;
   return (
     <Card>
       <SectionTitle>Google účet (Gmail + kalendář)</SectionTitle>
@@ -63,7 +66,7 @@ export function GoogleSection() {
         </div>
       )}
 
-      {notice && <p className="mt-3 rounded-xl bg-accent-soft px-3 py-2 text-sm text-accent">{notice}</p>}
+      {visibleNotice && <p className="mt-3 rounded-xl bg-accent-soft px-3 py-2 text-sm text-accent">{visibleNotice}</p>}
       {(connect.error || syncNow.error) && <p className="mt-3 rounded-xl bg-red-400/10 px-3 py-2 text-sm text-red-300">{formatError((connect.error ?? syncNow.error)?.message)}</p>}
     </Card>
   );
