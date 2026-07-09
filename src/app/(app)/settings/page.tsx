@@ -5,6 +5,7 @@ import { Card, Badge, SectionTitle, Loading } from "@/ui/components/ui";
 import { MfaSetup } from "@/ui/components/mfa-setup";
 import { GdprSection } from "@/ui/components/gdpr-section";
 import { ApiKeysSection } from "@/ui/components/api-keys-section";
+import { UsersSection } from "@/ui/components/users-section";
 
 const MODULE_LABEL: Record<string, string> = {
   organizations: "Klienti", contacts: "Kontakty", deals: "Obchod", projects: "Projekty",
@@ -38,6 +39,8 @@ export default function SettingsPage() {
         </div>
       </Card>
 
+      <UsersSection />
+
       <MfaSetup />
 
       <ApiKeysSection />
@@ -48,7 +51,7 @@ export default function SettingsPage() {
         <SectionTitle>Připravujeme</SectionTitle>
         <div className="flex items-center gap-4">
           <img src="/doodles/robot.png" alt="" width={84} height={84} className="shrink-0" />
-          <p className="text-sm text-muted">Správa uživatelů a pozvánky, pipeline &amp; fáze, custom fields, tagy, integrace (email/chat, Gmail sync, Git), notifikace na míru — přidáme v dalších krocích.</p>
+          <p className="text-sm text-muted">Custom fields a tagy v UI, Cmd+K hledání, notifikační preference, Gmail sync a kalendář — přidáme v dalších krocích.</p>
         </div>
       </Card>
     </div>
