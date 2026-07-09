@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Obchod: podání rukou (dohoda) — diagonální paže, zřetelný stisk -->
+  <g stroke="#F4ECDD" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <!-- levá paže (zdola zleva nahoru ke středu) -->
+    <path d="M5 51 L22 38.5"/>
+    <path d="M10.5 56.5 L26 44.5"/>
+    <!-- pravá paže -->
+    <path d="M59 51 L42 38.5"/>
+    <path d="M53.5 56.5 L38 44.5"/>
+    <!-- stisk: dvě propletené pěsti -->
+    <path d="M22.5 37.5 Q26 31.5 32.5 32.5 Q34.5 28.5 39.5 30 Q45 32 42.5 38 Q40 43.5 33.5 42.5 Q31 45.5 26.5 43.5 Q20.5 40.5 22.5 37.5 Z"/>
+    <!-- palec + klouby -->
+    <path d="M31 36.5 Q34 34.5 37 36" stroke-width="1.9"/>
+    <path d="M29 39.5 Q32 41 35.5 39.6" stroke-width="1.9"/>
+  </g>
+  <!-- manžety -->
+  <g stroke="#FFC93C" stroke-width="2.6" stroke-linecap="round">
+    <path d="M7.5 49 L13 54.5"/>
+    <path d="M56.5 49 L51 54.5"/>
+  </g>
+  <!-- pohybové čárky nad stiskem -->
+  <g stroke="#FFC93C" stroke-width="2" stroke-linecap="round">
+    <path d="M25 21.5 L23.5 25.5"/>
+    <path d="M32 20 L32 24.5"/>
+    <path d="M39 21.5 L40.5 25.5"/>
+  </g>
+  <path d="M53 12 L54.1 15.2 L57.2 16.3 L54.1 17.4 L53 20.6 L51.9 17.4 L48.8 16.3 L51.9 15.2 Z" fill="#7B5EA7"/>
+  <circle cx="10" cy="14" r="1.9" fill="#9CB380"/>
+</svg>

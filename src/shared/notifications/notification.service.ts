@@ -8,11 +8,12 @@ import { resolveChatNotifier } from "@/adapters/chat";
 import { resolveEmailProvider } from "@/adapters/email";
 import { appUsers } from "@/modules/security/security.entity";
 import { notificationOutbox } from "./notification.entity";
+import { notificationPreferences } from "./notification-preference.entity";
 
 /**
  * Doručování notifikací. Kritické → immediate (chat+email), běžné → daily_digest. Dedup klíč
- * (ws:user:kategorie:kanál:zdroj:den) brání spamu. Viz docs/workflows/notifications.md.
- * Per-user preference (NotificationPreference) = pozdější rozšíření; teď platí config defaulty.
+ * (ws:user:kategorie:kanál:zdroj:den) brání spamu. Per-user preference (Nastavení → Notifikace)
+ * přepisují config defaulty; mode "off" kanál vypne. Viz docs/workflows/notifications.md.
  */
 export type NotificationCategory = keyof typeof rules.categories;
 
@@ -36,16 +37,25 @@ export const notifications = {
     const userIds = [...new Set(input.userIds.filter((u): u is string => !!u))];
     if (!userIds.length) return;
 
+    // per-user přepis defaultů (Nastavení → Notifikace); klíč user:channel → mode
+    const prefRows = await db().select().from(notificationPreferences)
+      .where(and(eq(notificationPreferences.workspaceId, ws), eq(notificationPreferences.eventCategory, input.category), inArray(notificationPreferences.userId, userIds)));
+    const prefs = new Map(prefRows.map((p) => [`${p.userId}:${p.channel}`, p.mode as "immediate" | "daily_digest" | "off"]));
+
+    let anyImmediate = false;
     for (const userId of userIds) {
       for (const channel of cfg.channels) {
+        const mode = prefs.get(`${userId}:${channel}`) ?? cfg.mode;
+        if (mode === "off") continue;
+        if (mode === "immediate") anyImmediate = true;
         await db().insert(notificationOutbox).values({
-          id: randomUUID(), workspaceId: ws, userId, category: input.category, channel, mode: cfg.mode,
+          id: randomUUID(), workspaceId: ws, userId, category: input.category, channel, mode,
           title: input.title, body: input.body ?? null, link: input.link ?? null, sourceId: input.sourceId ?? null,
           dedupKey: `${ws}:${userId}:${input.category}:${channel}:${input.sourceId ?? input.title}:${day}`,
         }).onConflictDoNothing();
       }
     }
-    if (cfg.mode === "immediate") await this.dispatchImmediate();
+    if (anyImmediate) await this.dispatchImmediate();
   },
 
   /** Odešle čekající immediate notifikace (chat webhook + email). Volá se po notify() i z workeru. */

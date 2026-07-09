@@ -5,14 +5,15 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 import { NewClientModal, NewDealModal } from "@/ui/components/create-modals";
+import { SearchPalette } from "@/ui/components/search-palette";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: "grid", doodle: "/doodles/chart.png" },
-  { href: "/clients", label: "Klienti", icon: "users", doodle: "/doodles/pandulak.png" },
-  { href: "/deals", label: "Obchod", icon: "chart", doodle: "/doodles/icon-coins.png" },
+  { href: "/clients", label: "Klienti", icon: "users", doodle: "/doodles/people.svg" },
+  { href: "/deals", label: "Obchod", icon: "chart", doodle: "/doodles/handshake.svg" },
   { href: "/projects", label: "Projekty", icon: "folder", doodle: "/doodles/rocket.png" },
   { href: "/tasks", label: "Úkoly", icon: "check", doodle: "/doodles/icon-tasks.png" },
-  { href: "/settings", label: "Nastavení", icon: "gear", doodle: "/doodles/robot.png" },
+  { href: "/settings", label: "Nastavení", icon: "gear", doodle: "/doodles/gear.svg" },
 ] as const;
 
 function Icon({ name, className = "" }: { name: string; className?: string }) {
@@ -39,6 +40,16 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [modal, setModal] = useState<null | "client" | "deal">(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Cmd/Ctrl+K → globální hledání
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setSearchOpen((o) => !o); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     setCollapsed(localStorage.getItem("sidebar-collapsed") === "1");
@@ -93,6 +104,14 @@ export function AppShell({ children }: { children: ReactNode }) {
             <h1 className="font-display text-2xl tracking-wider text-ink">{title}</h1>
           </div>
           <div className="flex items-center gap-4">
+            <button onClick={() => setSearchOpen(true)} title="Hledat (⌘K)"
+              className="flex items-center gap-2 rounded-xl border border-line px-3 py-2 text-sm text-faint transition-colors hover:border-accent/40 hover:text-muted">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="16" height="16">
+                <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <span className="hidden md:inline">Hledat</span>
+              <kbd className="hidden rounded-md border border-line px-1.5 py-0.5 text-[10px] md:inline">⌘K</kbd>
+            </button>
             <div className="relative">
               <button onClick={() => setMenuOpen((o) => !o)} className="flex items-center gap-1.5 rounded-xl bg-accent-strong px-3.5 py-2 text-sm font-semibold text-[#08110c] transition-all hover:brightness-110">
                 <Icon name="plus" className="h-4 w-4" /> Nový
@@ -120,6 +139,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {modal === "client" && <NewClientModal onClose={() => setModal(null)} />}
       {modal === "deal" && <NewDealModal onClose={() => setModal(null)} />}
+      <SearchPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
 }

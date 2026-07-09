@@ -1,7 +1,20 @@
+import { pgTable, uuid, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+
 /**
- * Drizzle table pro NotificationPreference (per-user × kategorie × kanál → režim).
- * Default seed: kritické (sla_breach) immediate chat+email, zbytek daily_digest.
- * unique (user_id, event_category, channel). Viz config/notification-rules.ts.
+ * Per-user notifikační preference: user × event_category × channel → mode.
+ * Chybějící řádek = platí default z config/notification-rules.ts. Migrace 0009.
  */
-export const NOTIFICATION_PREFERENCE_ENTITY_NOTE =
-  "NotificationPreference: user × event_category × channel → mode(immediate|daily_digest|off), digest_hour.";
+export const notificationPreferences = pgTable("notification_preference", {
+  id: uuid("id").primaryKey(),
+  workspaceId: uuid("workspace_id").notNull(),
+  userId: uuid("user_id").notNull(),
+  eventCategory: text("event_category").notNull(),
+  channel: text("channel").notNull(),            // email | chat
+  mode: text("mode").notNull(),                  // immediate | daily_digest | off
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  uq: uniqueIndex("notification_preference_uq").on(t.workspaceId, t.userId, t.eventCategory, t.channel),
+}));
+
+export type NotificationPreferenceRow = typeof notificationPreferences.$inferSelect;
