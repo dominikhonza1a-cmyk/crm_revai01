@@ -3,6 +3,7 @@
 import { trpc } from "@/ui/trpc";
 import { Card, Badge, SectionTitle, Loading } from "@/ui/components/ui";
 import { MfaSetup } from "@/ui/components/mfa-setup";
+import { PasswordSection } from "@/ui/components/password-section";
 import { GdprSection } from "@/ui/components/gdpr-section";
 import { ApiKeysSection } from "@/ui/components/api-keys-section";
 import { UsersSection } from "@/ui/components/users-section";
@@ -49,6 +50,8 @@ export default function SettingsPage() {
       <CustomFieldsSection />
 
       <NotificationsSection />
+
+      <PasswordSection />
 
       <MfaSetup />
 

@@ -15,6 +15,15 @@ export default function LoginPage() {
   const [needsMfa, setNeedsMfa] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [resetInfo, setResetInfo] = useState<string | null>(null);
+
+  async function forgotPassword() {
+    setError(null); setResetInfo(null);
+    if (!email) { setError("Vyplň nahoře e-mail a klikni na Zapomenuté heslo znovu."); return; }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
+    if (error) setError(error.message);
+    else setResetInfo(`Odkaz pro nastavení hesla odeslán na ${email} — mrkni do schránky.`);
+  }
 
   async function signIn(e: React.FormEvent) {
     e.preventDefault();
@@ -61,6 +70,9 @@ export default function LoginPage() {
               <input className={input} type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
               <input className={input} type="password" placeholder="Heslo" value={password} onChange={(e) => setPassword(e.target.value)} required />
               <button className={btn} type="submit" disabled={busy}>{busy ? "Přihlašuji…" : "Přihlásit se"}</button>
+              <button type="button" className="w-full text-center text-xs text-faint hover:text-accent hover:underline" onClick={forgotPassword}>
+                Zapomenuté heslo? (pošleme odkaz e-mailem)
+              </button>
             </form>
           ) : (
             <form onSubmit={verifyMfa} className="space-y-3">
@@ -70,6 +82,7 @@ export default function LoginPage() {
             </form>
           )}
           {error && <p className="mt-3 rounded-xl bg-red-400/10 px-3 py-2 text-sm text-red-300">{error}</p>}
+          {resetInfo && <p className="mt-3 rounded-xl bg-accent-soft px-3 py-2 text-sm text-accent">{resetInfo}</p>}
         </div>
       </div>
     </div>
