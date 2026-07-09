@@ -31,6 +31,32 @@ const hostToDomain = (url: string | null) => {
   try { return new URL(url).hostname.replace(/^www\./, "").toLowerCase(); } catch { return null; }
 };
 
+/** Automatičtí odesílatelé (newslettery, notifikace) — nepárovat, i kdyby doména seděla. */
+const AUTOMATED_LOCALPARTS = new Set([
+  "noreply", "no-reply", "no_reply", "donotreply", "do-not-reply", "mailer-daemon",
+  "newsletter", "newsletters", "news", "bounce", "bounces", "notifications", "notification",
+  "updates", "alert", "alerts", "digest", "mailer", "postmaster",
+]);
+
+/** Protistrany relevantní pro párování: cizí doména + ne-automatický odesílatel. */
+export function relevantCounterparts(addrs: string[], ownDomain: string): string[] {
+  return [...new Set(addrs)].filter((a) => {
+    if (!a || domainOf(a) === ownDomain) return false;
+    const local = a.split("@")[0] ?? "";
+    return !AUTOMATED_LOCALPARTS.has(local);
+  });
+}
+
+/** Všichni napárovaní klienti (e-mail kontaktu má přednost, pak doména webu) — bez duplicit. */
+export function findOrgs(addrs: string[], maps: { byEmail: Map<string, string>; byDomain: Map<string, string> }): string[] {
+  const ids = new Set<string>();
+  for (const a of addrs) {
+    const hit = maps.byEmail.get(a) ?? maps.byDomain.get(domainOf(a));
+    if (hit) ids.add(hit);
+  }
+  return [...ids];
+}
+
 async function matchingMaps() {
   const ws = currentWorkspaceId();
   const orgs = await db().select({ id: organizations.id, website: organizations.website })
@@ -43,10 +69,6 @@ async function matchingMaps() {
   const byDomain = new Map<string, string>();
   for (const o of orgs) { const d = hostToDomain(o.website); if (d && !byDomain.has(d)) byDomain.set(d, o.id); }
   return { byEmail, byDomain };
-}
-
-function findOrg(addr: string, maps: { byEmail: Map<string, string>; byDomain: Map<string, string> }): string | null {
-  return maps.byEmail.get(addr) ?? maps.byDomain.get(domainOf(addr)) ?? null;
 }
 
 async function gapi(token: string, url: string): Promise<Record<string, unknown> | null> {
@@ -67,20 +89,20 @@ async function syncGmail(ctx: TenantContext, token: string, ownEmail: string, ma
     const headers = ((msg.payload as { headers?: { name: string; value: string }[] })?.headers ?? []);
     const h = (n: string) => headers.find((x) => x.name.toLowerCase() === n.toLowerCase())?.value;
     const from = emailsIn(h("From"));
-    const others = [...emailsIn(h("To")), ...emailsIn(h("Cc")), ...from].filter((a) => domainOf(a) !== ownDomain);
     const outgoing = from.some((a) => a === ownEmail.toLowerCase() || domainOf(a) === ownDomain);
 
-    const orgId = others.map((a) => findOrg(a, maps)).find(Boolean);
-    if (!orgId) continue;
-
-    await activityService.writeTimeline(ctx, {
-      entityType: "organization", entityId: orgId, organizationId: orgId,
-      eventType: outgoing ? "email_out" : "email_in",
-      title: `📧 ${h("Subject") ?? "(bez předmětu)"}`,
-      payload: { from: h("From"), to: h("To"), date: h("Date"), via: ownEmail },
-      sourceType: "integration_event", sourceId: uuidFrom(`gmail:${id}:${orgId}`),
-    });
-    written++;
+    // newslettery/automaty ven; e-mail se zapíše KAŽDÉMU napárovanému klientovi (i víc firem v kopii)
+    const counterparts = relevantCounterparts([...emailsIn(h("To")), ...emailsIn(h("Cc")), ...from], ownDomain);
+    for (const orgId of findOrgs(counterparts, maps)) {
+      await activityService.writeTimeline(ctx, {
+        entityType: "organization", entityId: orgId, organizationId: orgId,
+        eventType: outgoing ? "email_out" : "email_in",
+        title: `📧 ${h("Subject") ?? "(bez předmětu)"}`,
+        payload: { from: h("From"), to: h("To"), date: h("Date"), via: ownEmail },
+        sourceType: "integration_event", sourceId: uuidFrom(`gmail:${id}:${orgId}`),
+      });
+      written++;
+    }
   }
   return written;
 }
@@ -93,19 +115,19 @@ async function syncCalendar(ctx: TenantContext, token: string, ownEmail: string,
   let written = 0;
 
   for (const ev of items) {
-    const attendees = (ev.attendees ?? []).map((a) => (a.email ?? "").toLowerCase()).filter((a) => a && domainOf(a) !== ownDomain);
-    const orgId = attendees.map((a) => findOrg(a, maps)).find(Boolean);
-    if (!orgId) continue;
+    const attendees = relevantCounterparts((ev.attendees ?? []).map((a) => (a.email ?? "").toLowerCase()), ownDomain);
     const start = ev.start?.dateTime ?? ev.start?.date ?? "";
 
-    await activityService.writeTimeline(ctx, {
-      entityType: "organization", entityId: orgId, organizationId: orgId,
-      eventType: "meeting",
-      title: `📅 ${ev.summary ?? "Schůzka"} · ${start.slice(0, 16).replace("T", " ")}`,
-      payload: { start, attendees, via: ownEmail },
-      sourceType: "integration_event", sourceId: uuidFrom(`gcal:${ev.id}:${orgId}`),
-    });
-    written++;
+    for (const orgId of findOrgs(attendees, maps)) {
+      await activityService.writeTimeline(ctx, {
+        entityType: "organization", entityId: orgId, organizationId: orgId,
+        eventType: "meeting",
+        title: `📅 ${ev.summary ?? "Schůzka"} · ${start.slice(0, 16).replace("T", " ")}`,
+        payload: { start, attendees, via: ownEmail },
+        sourceType: "integration_event", sourceId: uuidFrom(`gcal:${ev.id}:${orgId}`),
+      });
+      written++;
+    }
   }
   return written;
 }
