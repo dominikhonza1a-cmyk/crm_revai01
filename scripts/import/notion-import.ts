@@ -121,7 +121,7 @@ const extractWeb = (name: string, company: string | null, email: string | null):
       const p = c.props;
       const name = (p.Name ?? "?").trim();
       const status = p.Status ?? "";
-      const web = extractWeb(name, p.Company, p.Email);
+      const web = extractWeb(name, p.Company ?? null, p.Email ?? null);
 
       const org = await organizationService.create(ctx, {
         name, website: web,
