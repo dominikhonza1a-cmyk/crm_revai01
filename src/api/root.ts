@@ -16,6 +16,7 @@ import { customFieldsRouter } from "@/shared/custom-fields/custom-field.router";
 import { searchRouter } from "@/shared/search/search.router";
 import { notificationsRouter } from "@/shared/notifications/notification.router";
 import { ideasRouter } from "@/modules/ideas/idea.router";
+import { subscriptionsRouter } from "@/modules/subscriptions/subscription.router";
 
 // zaregistruje event subscribery (W2: deal.won → projekt) jednou při načtení
 bootstrap();
@@ -51,6 +52,7 @@ export const appRouter = router({
   search: searchRouter,
   notifications: notificationsRouter,
   ideas: ideasRouter,
+  subscriptions: subscriptionsRouter,
 });
 
 export type AppRouter = typeof appRouter;

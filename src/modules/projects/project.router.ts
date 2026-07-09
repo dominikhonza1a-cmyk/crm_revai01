@@ -37,4 +37,9 @@ export const projectsRouter = router({
       repo: z.string().regex(/^[\w.-]+\/[\w.-]+$/, "Formát: owner/repo").nullable(),
     }))
     .mutation(({ input }) => projectRepository.setCustomField(input.projectId, "git_repo", input.repo)),
+
+  // měsíční fakturace retaineru (CZK) — sčítá se na dashboardu Finance
+  setMonthlyAmount: protectedProcedure.use(requirePermission("projects", "write"))
+    .input(z.object({ projectId: z.string().uuid(), amountMinor: z.bigint().nonnegative().nullable() }))
+    .mutation(({ input }) => projectRepository.setMonthlyAmount(input.projectId, input.amountMinor)),
 });

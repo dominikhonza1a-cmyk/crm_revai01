@@ -82,6 +82,13 @@ export const projectRepository = {
   },
 
   /** Upsert jednoho klíče v custom_fields (např. git_repo). null = odstranit. */
+  /** Měsíční fakturace retaineru (CZK haléře) — pro dashboard finance. */
+  async setMonthlyAmount(projectId: string, amountMinor: bigint | null): Promise<void> {
+    const ws = currentWorkspaceId();
+    await db().update(projects).set({ monthlyAmountMinor: amountMinor, updatedAt: new Date() })
+      .where(and(eq(projects.id, projectId), eq(projects.workspaceId, ws)));
+  },
+
   async setCustomField(projectId: string, key: string, value: unknown | null): Promise<ProjectRow> {
     const ws = currentWorkspaceId();
     const p = await this.getById(projectId);

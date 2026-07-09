@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Měsíční retainer: mince v kruhu opakování (recurring) -->
+  <g stroke="#F4ECDD" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <!-- šipky kruhu opakování -->
+    <path d="M14 27 Q17 15.5 28.5 12.5 Q37 10.5 44.5 15.5"/>
+    <path d="M44.5 15.5 L44 9.5 M44.5 15.5 L38.5 16.8"/>
+    <path d="M50 37 Q47 48.5 35.5 51.5 Q27 53.5 19.5 48.5"/>
+    <path d="M19.5 48.5 L20 54.5 M19.5 48.5 L25.5 47.2"/>
+    <!-- mince uprostřed -->
+    <circle cx="32" cy="32" r="9.5"/>
+  </g>
+  <g stroke="#FFC93C" stroke-width="2.4" stroke-linecap="round">
+    <path d="M32 27.5 L32 36.5"/>
+    <path d="M35 28.8 Q31 30 30 32 Q31 34 35 35.2"/>
+  </g>
+  <path d="M55 24 L56.1 27.2 L59.2 28.3 L56.1 29.4 L55 32.6 L53.9 29.4 L50.8 28.3 L53.9 27.2 Z" fill="#7B5EA7"/>
+  <circle cx="9" cy="36" r="1.9" fill="#9CB380"/>
+</svg>

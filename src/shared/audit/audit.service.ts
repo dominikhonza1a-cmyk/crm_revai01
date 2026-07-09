@@ -14,7 +14,7 @@ export type AuditAction =
   | "deal_stage_changed" | "project_phase_changed" | "project_status_changed"
   | "sla_policy_changed" | "sla_overridden" | "document_secret_ref_changed"
   | "integration_connected" | "integration_revoked" | "import_executed" | "settings_changed"
-  | "api_key_created" | "api_key_revoked";
+  | "api_key_created" | "api_key_revoked" | "secret_revealed";
 
 export interface EntityRef { type: string; id: string; }
 export type FieldDiff = Record<string, { from: unknown; to: unknown }>;

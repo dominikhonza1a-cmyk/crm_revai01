@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Historicky vyděláno: pytel peněz v doodle stylu -->
+  <g stroke="#F4ECDD" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <!-- pytel -->
+    <path d="M26 17 Q22 24 17.5 31 Q12.5 40 17 47.5 Q22 54.5 32 54.5 Q42 54.5 47 47.5 Q51.5 40 46.5 31 Q42 24 38 17"/>
+    <!-- uzel -->
+    <path d="M25 16.5 Q32 13.5 39 16.5"/>
+    <path d="M27 12 Q32 9.5 37 12 L39 16.5 Q32 19 25 16.5 Z"/>
+  </g>
+  <!-- symbol koruny (Kč) -->
+  <g stroke="#FFC93C" stroke-width="2.8" stroke-linecap="round">
+    <path d="M27 30.5 L27 43.5"/>
+    <path d="M36.5 30.5 Q30.5 33 27 37 Q31 38 34 41.5 Q35.5 43 37 43.5"/>
+  </g>
+  <path d="M51 14 L52.4 18.1 L56.2 19.5 L52.4 20.9 L51 25 L49.6 20.9 L45.8 19.5 L49.6 18.1 Z" fill="#FFC93C"/>
+  <path d="M11 51 L11.9 53.5 L14.3 54.4 L11.9 55.3 L11 57.8 L10.1 55.3 L7.7 54.4 L10.1 53.5 Z" fill="#7B5EA7"/>
+  <circle cx="55" cy="47" r="1.9" fill="#9CB380"/>
+</svg>

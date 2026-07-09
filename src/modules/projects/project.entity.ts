@@ -15,6 +15,7 @@ export const projects = pgTable("project", {
   code: text("code"),
   projectType: text("project_type").notNull(),
   engagementType: text("engagement_type").notNull(),   // one_off | retainer
+  monthlyAmountMinor: bigint("monthly_amount_minor", { mode: "bigint" }),   // retainer CZK/měs (haléře)
   status: text("status").notNull().default("draft"),   // draft | active | on_hold | closed
   currentPhaseId: uuid("current_phase_id"),
   ownerId: uuid("owner_id"),

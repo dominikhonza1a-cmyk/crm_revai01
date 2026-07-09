@@ -12,6 +12,37 @@ export interface DashboardData {
   tickets: { priority: string; count: number }[];
   revenue: { organization: string; valueMinor: string }[];
   myWork: { count: number };
+  finance: {
+    wonTotalCzkMinor: bigint;
+    retainerMonthlyCzkMinor: bigint;
+    subsMonthlyCzkMinor: bigint;
+    months: { month: string; wonCzkMinor: bigint }[];
+    usdRate: number | null;
+  };
+}
+
+const MONTH_SHORT = ["led", "úno", "bře", "dub", "kvě", "čvn", "čvc", "srp", "zář", "říj", "lis", "pro"];
+
+/** Sloupcový graf „vyděláno po měsících" — čistý SVG bez knihoven. */
+function MonthlyBars({ months }: { months: DashboardData["finance"]["months"] }) {
+  const vals = months.map((m) => Number(m.wonCzkMinor));
+  const max = Math.max(1, ...vals);
+  return (
+    <div className="flex h-36 items-end gap-1.5">
+      {months.map((m, i) => {
+        const [y, mo = ""] = m.month.split("-");
+        const label = MONTH_SHORT[parseInt(mo, 10) - 1] ?? mo;
+        const v = vals[i] ?? 0;
+        const h = Math.max(3, (v / max) * 100);
+        return (
+          <div key={m.month} className="group flex flex-1 flex-col items-center gap-1" title={`${label} ${y}: ${money(v)}`}>
+            <div className="w-full rounded-t-md bg-accent/80 transition-colors group-hover:bg-accent" style={{ height: `${h}%`, minHeight: v > 0 ? 6 : 3, opacity: v > 0 ? 1 : 0.25 }} />
+            <span className="text-[10px] text-faint">{label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 /** Prezentační dashboard — dostane data, nic nefetchuje (použito v /dashboard i pro náhledy). */
@@ -21,8 +52,25 @@ export function DashboardView({ data }: { data: DashboardData }) {
   const totalProjects = data.projStatus.reduce((s, p) => s + p.count, 0);
   const donutSegs = data.projStatus.map((p) => ({ value: p.count, color: STATUS_COLOR[p.status] ?? "#5b6577", label: STATUS_LABEL[p.status] ?? p.status }));
 
+  const fin = data.finance;
+  const net = Number(fin.retainerMonthlyCzkMinor) - Number(fin.subsMonthlyCzkMinor);
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
+      {/* Finance — historicky vyděláno, měsíční retainery, měsíční předplatná (náklady) */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard label="Historicky vyděláno" value={money(Number(fin.wonTotalCzkMinor))} hint="vyhrané dealy celkem" iconSrc="/doodles/safe.svg" />
+        <StatCard label="Měsíční retainery" value={money(Number(fin.retainerMonthlyCzkMinor))} hint="aktivní retainer projekty / měsíc" iconSrc="/doodles/retainer.svg" />
+        <Link href="/subscriptions"><StatCard label="Měsíční předplatná" value={money(Number(fin.subsMonthlyCzkMinor))} hint={`fixní náklady / měsíc${fin.usdRate ? ` · kurz $ ${fin.usdRate.toFixed(2)}` : ""}`} iconSrc="/doodles/card.svg" /></Link>
+      </div>
+
+      <Card>
+        <SectionTitle right={<span className={`text-xs font-medium ${net >= 0 ? "text-accent" : "text-red-300"}`}>retainery − předplatná = {money(net)} /měs</span>}>
+          Vyděláno po měsících (12 měsíců)
+        </SectionTitle>
+        <MonthlyBars months={fin.months} />
+      </Card>
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Link href="/tasks"><StatCard label="Moje práce" value={data.myWork.count} hint="otevřené úkoly" iconSrc="/doodles/icon-tasks.png" /></Link>
         <StatCard label="Win-rate" value={data.win.winRatePct != null ? `${data.win.winRatePct}%` : "—"} hint={`vyhráno ${data.win.won} · prohráno ${data.win.lost}`} iconSrc="/doodles/icon-medal.png" doodle="/doodles/trophy.png" />

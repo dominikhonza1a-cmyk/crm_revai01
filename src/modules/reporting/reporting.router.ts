@@ -9,4 +9,5 @@ export const reportingRouter = router({
   projectsStatus: protectedProcedure.use(requirePermission("reporting", "read")).query(() => reportingService.projectsStatus()),
   openTickets: protectedProcedure.use(requirePermission("reporting", "read")).query(() => reportingService.openTickets()),
   revenuePerClient: protectedProcedure.use(requirePermission("reporting", "read")).query(() => reportingService.revenuePerClient()),
+  finance: protectedProcedure.use(requirePermission("reporting", "read")).query(() => reportingService.finance()),
 });

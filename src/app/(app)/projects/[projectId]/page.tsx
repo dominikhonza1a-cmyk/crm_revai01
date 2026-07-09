@@ -93,6 +93,7 @@ export default function ProjectDetailPage() {
             <div className="flex justify-between"><span className="text-muted">Start</span><span className="text-ink">{p.startDate ?? "—"}</span></div>
             <div className="flex justify-between"><span className="text-muted">Typ zakázky</span><span className="text-ink">{p.engagementType === "retainer" ? "Retainer" : "Jednorázový"}</span></div>
             <GitRepoRow projectId={projectId} current={(p.customFields as Record<string, unknown>)?.git_repo as string | undefined} />
+            {p.engagementType === "retainer" && <RetainerRow projectId={projectId} current={p.monthlyAmountMinor} />}
           </div></Card>
           <CustomFieldsCard entityType="project" entityId={projectId} values={(p.customFields ?? {}) as Record<string, unknown>} />
         </div>
@@ -105,6 +106,34 @@ export default function ProjectDetailPage() {
 }
 
 /** Mapování GitHub repa na projekt (git → timeline). Formát owner/repo; prázdné = odpojit. */
+/** Měsíční fakturace retaineru (CZK) — sčítá se na dashboardu do „Měsíční retainery". */
+function RetainerRow({ projectId, current }: { projectId: string; current: bigint | null }) {
+  const utils = trpc.useUtils();
+  const [value, setValue] = useState(current != null ? String(Number(current) / 100) : "");
+  const [saved, setSaved] = useState(false);
+  const set = trpc.projects.setMonthlyAmount.useMutation({
+    onSuccess: async () => { setSaved(true); setTimeout(() => setSaved(false), 2000); await Promise.all([utils.projects.get.invalidate({ id: projectId }), utils.reporting.dashboard.invalidate()]); },
+  });
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="shrink-0 text-muted">Měsíční retainer (Kč)</span>
+      <div className="flex items-center gap-2">
+        <input
+          className="w-56 rounded-lg border border-line bg-surface-2 px-2.5 py-1.5 text-xs text-ink placeholder:text-faint outline-none focus:border-accent"
+          inputMode="decimal" placeholder="např. 15000" value={value} onChange={(e) => setValue(e.target.value)} />
+        <button className="rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted hover:border-accent/40 hover:text-accent disabled:opacity-60"
+          disabled={set.isPending}
+          onClick={() => {
+            const n = parseFloat(value.replace(",", "."));
+            set.mutate({ projectId, amountMinor: value.trim() && !Number.isNaN(n) ? BigInt(Math.round(n * 100)) : null });
+          }}>
+          {set.isPending ? "…" : saved ? "✓" : "Uložit"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function GitRepoRow({ projectId, current }: { projectId: string; current?: string }) {
   const utils = trpc.useUtils();
   const [value, setValue] = useState(current ?? "");

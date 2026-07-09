@@ -6,12 +6,58 @@ import { deals, pipelineStages } from "@/modules/deals/deal.entity";
 import { projects } from "@/modules/projects/project.entity";
 import { tasks } from "@/modules/tasks/task.entity";
 import { organizations } from "@/modules/organizations/organization.entity";
+import { subscriptions } from "@/modules/subscriptions/subscription.entity";
+import { czkRates, toCzkMinor } from "@/shared/fx";
 
 /**
  * Read-only agregace pro dashboard widgety. Jediný (spolu s GDPR joby), kdo smí číst i soft-deleted řádky
  * — zde ale čteme jen aktivní (deleted_at IS NULL). Těžké agregace → materializované pohledy (fáze 3).
  */
 export const reportingService = {
+  /**
+   * Finanční přehled: historicky vyděláno (won dealy), měsíční retainery (aktivní retainer
+   * projekty), měsíční předplatná (aktivní, roční/12) — vše převedeno na CZK dle ČNB.
+   * K tomu série vyděláno po měsících (posledních 12).
+   */
+  async finance() {
+    const ws = currentWorkspaceId();
+    const rates = await czkRates();
+
+    const won = await db().select({ amountMinor: deals.amountMinor, currency: deals.currency, wonAt: deals.wonAt })
+      .from(deals).innerJoin(pipelineStages, eq(deals.pipelineStageId, pipelineStages.id))
+      .where(and(eq(deals.workspaceId, ws), isNull(deals.deletedAt), eq(pipelineStages.kind, "won")));
+    let wonTotalCzkMinor = 0n;
+    const byMonth = new Map<string, bigint>();
+    for (const d of won) {
+      const czk = toCzkMinor(d.amountMinor ?? 0n, d.currency ?? "CZK", rates);
+      wonTotalCzkMinor += czk;
+      const m = (d.wonAt ?? new Date()).toISOString().slice(0, 7);
+      byMonth.set(m, (byMonth.get(m) ?? 0n) + czk);
+    }
+    const months: { month: string; wonCzkMinor: bigint }[] = [];
+    const now = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const m = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1)).toISOString().slice(0, 7);
+      months.push({ month: m, wonCzkMinor: byMonth.get(m) ?? 0n });
+    }
+
+    const retainers = await db().select({ monthly: projects.monthlyAmountMinor })
+      .from(projects)
+      .where(and(eq(projects.workspaceId, ws), isNull(projects.deletedAt),
+        eq(projects.engagementType, "retainer"), inArray(projects.status, ["active", "draft"])));
+    const retainerMonthlyCzkMinor = retainers.reduce((a, r) => a + (r.monthly ?? 0n), 0n);
+
+    const subs = await db().select().from(subscriptions)
+      .where(and(eq(subscriptions.workspaceId, ws), isNull(subscriptions.deletedAt), eq(subscriptions.status, "active")));
+    let subsMonthlyCzkMinor = 0n;
+    for (const su of subs) {
+      const czk = toCzkMinor(su.amountMinor, su.currency, rates);
+      subsMonthlyCzkMinor += su.period === "yearly" ? czk / 12n : czk;
+    }
+
+    return { wonTotalCzkMinor, retainerMonthlyCzkMinor, subsMonthlyCzkMinor, months, usdRate: rates.USD ?? null };
+  },
+
   /** Hodnota pipeline po fázích (jen otevřené fáze) + počet a suma. */
   async pipelineValue() {
     const ws = currentWorkspaceId();
@@ -85,10 +131,11 @@ export const reportingService = {
 
   /** Souhrn dashboardu — sada widgetů najednou. */
   async dashboard(ctx: TenantContext) {
-    const [pipeline, win, projStatus, overdue, tickets, revenue, mine] = await Promise.all([
+    const [pipeline, win, projStatus, overdue, tickets, revenue, mine, finance] = await Promise.all([
       this.pipelineValue(), this.winRate(), this.projectsStatus(), this.overdueTasks(),
       this.openTickets(), this.revenuePerClient(), ctx.userId ? this.myWork(ctx.userId) : Promise.resolve({ count: 0 }),
+      this.finance(),
     ]);
-    return { pipeline, win, projStatus, overdue, tickets, revenue, myWork: mine };
+    return { pipeline, win, projStatus, overdue, tickets, revenue, myWork: mine, finance };
   },
 };
