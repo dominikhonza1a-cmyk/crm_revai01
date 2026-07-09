@@ -3,7 +3,7 @@ import { router, protectedProcedure, requirePermission } from "@/api/trpc";
 import { documentCreateSchema } from "./document.validation";
 import { documentService } from "./document.service";
 
-const entityInput = z.object({ entityType: z.enum(["organization", "contact", "deal", "project", "task"]), entityId: z.string().uuid() });
+const entityInput = z.object({ entityType: z.enum(["organization", "contact", "deal", "project", "task", "idea"]), entityId: z.string().uuid() });
 const idInput = z.object({ id: z.string().uuid() });
 
 /** tRPC router dokumentů. Primárně reference na externí úložiště; secret_ref bez externalUrl (CHECK). */

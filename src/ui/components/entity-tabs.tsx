@@ -5,7 +5,7 @@ import { trpc } from "@/ui/trpc";
 import { Card, Badge, Loading, Empty } from "./ui";
 import { NewDocumentModal, NewNoteModal } from "./entity-forms";
 
-type Host = "organization" | "contact" | "deal" | "project" | "task";
+type Host = "organization" | "contact" | "deal" | "project" | "task" | "idea";
 
 const addBtn = "rounded-xl border border-line px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent/40 hover:text-accent";
 

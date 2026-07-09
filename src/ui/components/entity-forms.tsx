@@ -4,7 +4,7 @@ import { useState } from "react";
 import { trpc } from "@/ui/trpc";
 import { Modal, fieldInput, fieldLabel, btnPrimary, btnGhost, formatError } from "./ui";
 
-type Host = "organization" | "contact" | "deal" | "project" | "task";
+type Host = "organization" | "contact" | "deal" | "project" | "task" | "idea";
 
 /** Nový kontakt (u klienta). */
 export function NewContactModal({ organizationId, onClose }: { organizationId: string; onClose: () => void }) {

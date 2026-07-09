@@ -67,5 +67,5 @@ export type RoleKey = (typeof RoleKey)[number];
 export const TaggableEntity = ["organization", "contact", "deal", "project", "task", "document"] as const;
 export type TaggableEntity = (typeof TaggableEntity)[number];
 
-export const TimelineHostEntity = ["organization", "contact", "deal", "project", "task"] as const;
+export const TimelineHostEntity = ["organization", "contact", "deal", "project", "task", "idea"] as const;
 export type TimelineHostEntity = (typeof TimelineHostEntity)[number];

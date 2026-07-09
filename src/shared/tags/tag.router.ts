@@ -6,7 +6,7 @@ import { db } from "@/shared/db";
 import { currentWorkspaceId } from "@/shared/tenant-context";
 import { tags, taggings } from "./tag.entity";
 
-const entityEnum = z.enum(["organization", "contact", "deal", "project", "task", "document"]);
+const entityEnum = z.enum(["organization", "contact", "deal", "project", "task", "document", "idea"]);
 
 /** Barvy nových tagů rotují z palety doodle stylu (mint/zlatá/fialová/šalvěj/nebeská/růžová). */
 const PALETTE = ["#34d399", "#ffc93c", "#7b5ea7", "#9cb380", "#38bdf8", "#f472b6"];

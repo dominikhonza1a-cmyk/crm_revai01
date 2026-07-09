@@ -8,9 +8,10 @@ import { contacts } from "@/modules/contacts/contact.entity";
 import { deals } from "@/modules/deals/deal.entity";
 import { projects } from "@/modules/projects/project.entity";
 import { tasks } from "@/modules/tasks/task.entity";
+import { ideas } from "@/modules/ideas/idea.entity";
 
 export type SearchHit = {
-  type: "client" | "contact" | "deal" | "project" | "task";
+  type: "client" | "contact" | "deal" | "project" | "task" | "idea";
   id: string;
   title: string;
   subtitle: string | null;
@@ -26,7 +27,7 @@ export const searchRouter = router({
       const p = `%${input.q}%`;
       const LIMIT = 5;
 
-      const [orgs, cts, dls, prjs, tsks] = await Promise.all([
+      const [orgs, cts, dls, prjs, tsks, ids] = await Promise.all([
         db().select({ id: organizations.id, name: organizations.name, website: organizations.website })
           .from(organizations)
           .where(and(eq(organizations.workspaceId, ws), isNull(organizations.deletedAt), ilike(organizations.name, p)))
@@ -52,6 +53,11 @@ export const searchRouter = router({
           .from(tasks)
           .where(and(eq(tasks.workspaceId, ws), isNull(tasks.deletedAt), ilike(tasks.title, p)))
           .orderBy(desc(tasks.updatedAt)).limit(LIMIT),
+
+        db().select({ id: ideas.id, title: ideas.title })
+          .from(ideas)
+          .where(and(eq(ideas.workspaceId, ws), isNull(ideas.deletedAt), or(ilike(ideas.title, p), ilike(ideas.content, p))))
+          .orderBy(desc(ideas.updatedAt)).limit(LIMIT),
       ]);
 
       return [
@@ -60,6 +66,7 @@ export const searchRouter = router({
         ...dls.map((d): SearchHit => ({ type: "deal", id: d.id, title: d.title, subtitle: d.orgName, href: "/deals" })),
         ...prjs.map((pr): SearchHit => ({ type: "project", id: pr.id, title: pr.name, subtitle: pr.code, href: `/projects/${pr.id}` })),
         ...tsks.map((t): SearchHit => ({ type: "task", id: t.id, title: t.title, subtitle: t.type === "support" ? "ticket" : "úkol", href: "/tasks" })),
+        ...ids.map((i): SearchHit => ({ type: "idea", id: i.id, title: i.title, subtitle: "nápad", href: `/ideas/${i.id}` })),
       ];
     }),
 });

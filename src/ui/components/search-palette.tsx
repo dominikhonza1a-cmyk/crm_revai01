@@ -10,6 +10,7 @@ const TYPE_META: Record<string, { label: string; doodle: string }> = {
   deal: { label: "Dealy", doodle: "/doodles/handshake.svg" },
   project: { label: "Projekty", doodle: "/doodles/rocket.png" },
   task: { label: "Úkoly", doodle: "/doodles/icon-tasks.png" },
+  idea: { label: "Nápady", doodle: "/doodles/bulb.svg" },
 };
 
 /** Globální hledání — Cmd/Ctrl+K nebo klik na lupu v hlavičce. */

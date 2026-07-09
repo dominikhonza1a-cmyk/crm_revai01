@@ -5,7 +5,7 @@ import { urlish } from "@/shared/validation";
 export const documentCreateSchema = z.object({
   kind: z.enum(["external_ref", "native_file", "secret_ref"]),
   title: z.string().min(1).max(300),
-  entityType: z.enum(["organization", "contact", "deal", "project", "task"]),
+  entityType: z.enum(["organization", "contact", "deal", "project", "task", "idea"]),
   entityId: z.string().uuid(),
   docCategory: z.enum(["contract", "proposal", "spec", "credentials_ref", "deliverable", "other"]),
   storageProvider: z.enum(["gdrive", "sharepoint", "url", "local"]).optional(),

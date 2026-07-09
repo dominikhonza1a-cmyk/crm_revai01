@@ -2,7 +2,7 @@ import { z } from "zod";
 import { router, protectedProcedure } from "@/api/trpc";
 import { activityService } from "./activity.service";
 
-const entityEnum = z.enum(["organization", "contact", "deal", "project", "task"]);
+const entityEnum = z.enum(["organization", "contact", "deal", "project", "task", "idea"]);
 
 const timelineInput = z.object({
   entityType: entityEnum,

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { trpc } from "@/ui/trpc";
 
-type EntityType = "organization" | "contact" | "deal" | "project" | "task" | "document";
+type EntityType = "organization" | "contact" | "deal" | "project" | "task" | "document" | "idea";
 
 /** Štítky entity: barevné chipy + přiřazení existujícího / vytvoření nového tagu. */
 export function TagPicker({ entityType, entityId }: { entityType: EntityType; entityId: string }) {
