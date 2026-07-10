@@ -8,6 +8,8 @@ import { taskRepository } from "@/modules/tasks/task.repository";
 import { slaRepository } from "@/modules/tasks/sla.repository";
 import { dealRepository } from "@/modules/deals/deal.repository";
 import { projectRepository } from "@/modules/projects/project.repository";
+import { projects } from "@/modules/projects/project.entity";
+import { and, eq, isNull } from "drizzle-orm";
 import { activityService } from "@/modules/activities/activity.service";
 import { notifications } from "@/shared/notifications/notification.service";
 import { elapsedFraction, nextEscalationStep } from "@/domain/policies/sla.policy";
@@ -149,6 +151,33 @@ export async function runStaleDeals(now = new Date()): Promise<void> {
 }
 
 /** Denní digest: jeden email s nahromaděnými běžnými notifikacemi. */
+/**
+ * Automatické účtování retainerů: 1. den měsíce (nebo kdykoli poté) přidá běžícím
+ * retainerům platbu "retainer MM/RRRR" za aktuální měsíc. Idempotentní dle poznámky —
+ * vypnutí přepínače „Retainer běží" účtování zastaví.
+ */
+export async function runRetainerBilling(now = new Date()): Promise<{ billed: number }> {
+  let billed = 0;
+  await forEachWorkspace("retainer-billing", async () => {
+    const rows = await db().select().from(projects)
+      .where(and(isNull(projects.deletedAt), eq(projects.engagementType, "retainer"), eq(projects.retainerActive, true)));
+    const label = `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+    const monthDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+    for (const p of rows) {
+      if (p.monthlyAmountMinor == null || p.monthlyAmountMinor <= 0n) continue;
+      const payments = (p.payments as { amountMinor: number; date: string; note?: string }[]) ?? [];
+      if (payments.some((x) => x.note === `retainer ${label}`)) continue;
+      await db().update(projects).set({
+        payments: [...payments, { amountMinor: Number(p.monthlyAmountMinor), date: monthDate, note: `retainer ${label}` }],
+        updatedAt: now,
+      }).where(eq(projects.id, p.id));
+      billed++;
+    }
+  });
+  if (billed) logger.info("retainer billing", { billed });
+  return { billed };
+}
+
 export async function runDailyDigest(): Promise<void> {
   await forEachWorkspace("daily-digest", async () => {
     const res = await notifications.sendDigest();
@@ -165,6 +194,7 @@ export async function runDispatchPending(): Promise<void> {
 
 /** Všechny joby najednou (scripts/run-jobs.ts + testy). */
 export async function runAllJobs(now = new Date()): Promise<void> {
+  await runRetainerBilling(now);
   await runRecurringTasks(now);
   await runOverdueTasks(now);
   await runSlaEscalation(now);

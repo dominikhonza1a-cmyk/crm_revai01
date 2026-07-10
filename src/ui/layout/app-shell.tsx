@@ -15,7 +15,7 @@ const NAV = [
   { href: "/tasks", label: "Úkoly", icon: "check", doodle: "/doodles/icon-tasks.png" },
   { href: "/inbox", label: "Pošta", icon: "mail", doodle: "/doodles/envelope.svg" },
   { href: "/ideas", label: "Nápady", icon: "bulb", doodle: "/doodles/bulb.svg" },
-  { href: "/subscriptions", label: "Předplatná", icon: "card", doodle: "/doodles/card.svg" },
+  { href: "/subscriptions", label: "Náklady", icon: "card", doodle: "/doodles/card.svg" },
   { href: "/settings", label: "Nastavení", icon: "gear", doodle: "/doodles/gear.svg" },
 ] as const;
 

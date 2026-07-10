@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, char, bigint, timestamp, index } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, char, bigint, timestamp, date, index } from "drizzle-orm/pg-core";
 
 /** Předplatné (fixní náklad) — Claude, GPT, hosting… Heslo jen šifrované. Migrace 0011. */
 export const subscriptions = pgTable("subscription", {
@@ -11,7 +11,8 @@ export const subscriptions = pgTable("subscription", {
   url: text("url"),
   amountMinor: bigint("amount_minor", { mode: "bigint" }).notNull().default(0n),
   currency: char("currency", { length: 3 }).notNull().default("USD"),
-  period: text("period").notNull().default("monthly"),
+  period: text("period").notNull().default("monthly"),   // monthly | yearly | one_off
+  paidOn: date("paid_on"),                               // u one_off: datum zaplacení
   notes: text("notes"),
   status: text("status").notNull().default("active"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

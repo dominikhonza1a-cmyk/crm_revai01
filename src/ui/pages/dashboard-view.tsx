@@ -19,28 +19,44 @@ export interface DashboardData {
     wonTotalCzkMinor: bigint;
     retainerMonthlyCzkMinor: bigint;
     subsMonthlyCzkMinor: bigint;
-    months: { month: string; wonCzkMinor: bigint }[];
+    cashflowMonthCzkMinor: bigint;
+    incomeThisMonthCzkMinor: bigint;
+    expenseThisMonthCzkMinor: bigint;
+    months: { month: string; wonCzkMinor: bigint; expenseCzkMinor: bigint }[];
     usdRate: number | null;
   };
 }
 
 const MONTH_SHORT = ["led", "úno", "bře", "dub", "kvě", "čvn", "čvc", "srp", "zář", "říj", "lis", "pro"];
 
-/** Sloupcový graf „vyděláno po měsících" — čistý SVG bez knihoven. */
-function MonthlyBars({ months }: { months: DashboardData["finance"]["months"] }) {
-  const vals = months.map((m) => Number(m.wonCzkMinor));
-  const max = Math.max(1, ...vals);
+/** Cashflow graf: příjmy nahoru (mint), výdaje dolů (červená), čistý výsledek v tooltipu. */
+function CashflowBars({ months }: { months: DashboardData["finance"]["months"] }) {
+  const inc = months.map((m) => Number(m.wonCzkMinor));
+  const exp = months.map((m) => Number(m.expenseCzkMinor));
+  const max = Math.max(1, ...inc, ...exp);
   return (
-    <div className="flex h-36 items-end gap-1.5">
+    <div className="flex gap-1.5">
       {months.map((m, i) => {
         const [y, mo = ""] = m.month.split("-");
         const label = MONTH_SHORT[parseInt(mo, 10) - 1] ?? mo;
-        const v = vals[i] ?? 0;
-        const h = Math.max(3, (v / max) * 100);
+        const vi = inc[i] ?? 0, ve = exp[i] ?? 0;
+        const net = vi - ve;
         return (
-          <div key={m.month} className="group flex flex-1 flex-col items-center gap-1" title={`${label} ${y}: ${money(v)}`}>
-            <div className="w-full rounded-t-md bg-accent/80 transition-colors group-hover:bg-accent" style={{ height: `${h}%`, minHeight: v > 0 ? 6 : 3, opacity: v > 0 ? 1 : 0.25 }} />
-            <span className="text-[10px] text-faint">{label}</span>
+          <div key={m.month} className="group flex flex-1 flex-col items-center"
+            title={`${label} ${y}\npříjmy: ${money(vi)}\nvýdaje: ${money(ve)}\ncashflow: ${net >= 0 ? "+" : ""}${money(net)}`}>
+            {/* příjmy nahoru */}
+            <div className="flex h-24 w-full items-end">
+              <div className="w-full rounded-t-md bg-accent/80 transition-colors group-hover:bg-accent"
+                style={{ height: `${Math.max(2, (vi / max) * 100)}%`, opacity: vi > 0 ? 1 : 0.2 }} />
+            </div>
+            {/* osa */}
+            <div className="my-0.5 h-px w-full bg-line" />
+            {/* výdaje dolů */}
+            <div className="flex h-16 w-full items-start">
+              <div className="w-full rounded-b-md bg-red-400/70 transition-colors group-hover:bg-red-400"
+                style={{ height: `${Math.max(2, (ve / max) * 100 * (16 / 24))}%`, opacity: ve > 0 ? 1 : 0.2 }} />
+            </div>
+            <span className={`mt-1 text-[10px] font-medium ${net > 0 ? "text-accent" : net < 0 ? "text-red-300" : "text-faint"}`}>{label}</span>
           </div>
         );
       })}
@@ -122,18 +138,21 @@ export function DashboardView({ data }: { data: DashboardData }) {
     <div className="mx-auto max-w-6xl space-y-6">
       <TodayCard />
 
-      {/* Finance — historicky vyděláno, měsíční retainery, měsíční předplatná (náklady) */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      {/* Finance — vyděláno, retainery, náklady, cashflow měsíce */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Historicky vyděláno" value={money(Number(fin.wonTotalCzkMinor))} hint="skutečně přijaté platby" iconSrc="/doodles/safe.svg" />
-        <StatCard label="Měsíční retainery" value={money(Number(fin.retainerMonthlyCzkMinor))} hint="aktivní retainer projekty / měsíc" iconSrc="/doodles/retainer.svg" />
-        <Link href="/subscriptions"><StatCard label="Měsíční předplatná" value={money(Number(fin.subsMonthlyCzkMinor))} hint={`fixní náklady / měsíc${fin.usdRate ? ` · kurz $ ${fin.usdRate.toFixed(2)}` : ""}`} iconSrc="/doodles/card.svg" /></Link>
+        <StatCard label="Měsíční retainery" value={money(Number(fin.retainerMonthlyCzkMinor))} hint="běžící retainery — účtují se samy 1. den měsíce" iconSrc="/doodles/retainer.svg" />
+        <Link href="/subscriptions"><StatCard label="Měsíční náklady" value={money(Number(fin.subsMonthlyCzkMinor))} hint={`fixní předplatná / měsíc${fin.usdRate ? ` · kurz $ ${fin.usdRate.toFixed(2)}` : ""}`} iconSrc="/doodles/card.svg" /></Link>
+        <StatCard label="Cashflow tento měsíc" value={`${Number(fin.cashflowMonthCzkMinor) >= 0 ? "+" : ""}${money(Number(fin.cashflowMonthCzkMinor))}`}
+          hint={`příjmy ${money(Number(fin.incomeThisMonthCzkMinor))} − výdaje ${money(Number(fin.expenseThisMonthCzkMinor))}`}
+          iconSrc={Number(fin.cashflowMonthCzkMinor) >= 0 ? "/doodles/trophy.png" : "/doodles/icon-clock.png"} />
       </div>
 
       <Card>
-        <SectionTitle right={<span className={`text-xs font-medium ${net >= 0 ? "text-accent" : "text-red-300"}`}>retainery − předplatná = {money(net)} /měs</span>}>
-          Zaplaceno po měsících (12 měsíců)
+        <SectionTitle right={<span className={`text-xs font-medium ${net >= 0 ? "text-accent" : "text-red-300"}`}>fixně: retainery − náklady = {money(net)} /měs</span>}>
+          Cashflow po měsících — příjmy ↑ / výdaje ↓
         </SectionTitle>
-        <MonthlyBars months={fin.months} />
+        <CashflowBars months={fin.months} />
       </Card>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

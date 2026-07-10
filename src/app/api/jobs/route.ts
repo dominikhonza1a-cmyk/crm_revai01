@@ -1,6 +1,6 @@
 import { loadConfig } from "@/config/app.config";
 import { logger } from "@/shared/logger";
-import { runSlaEscalation, runOverdueTasks, runDispatchPending, runRecurringTasks, runStaleDeals, runDailyDigest } from "@/workflows/jobs";
+import { runSlaEscalation, runOverdueTasks, runDispatchPending, runRecurringTasks, runStaleDeals, runDailyDigest, runRetainerBilling } from "@/workflows/jobs";
 import { runGoogleSync } from "@/modules/integrations/google/google-sync.job";
 
 /**
@@ -28,6 +28,7 @@ export async function POST(req: Request): Promise<Response> {
     case "daily":
       await runRecurringTasks();
       await runStaleDeals();
+      await runRetainerBilling();
       break;
     case "digest":
       await runDailyDigest();

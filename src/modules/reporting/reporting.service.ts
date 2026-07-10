@@ -36,12 +36,35 @@ export const reportingService = {
         byMonth.set(m, (byMonth.get(m) ?? 0n) + czk);
       }
     }
-    const months: { month: string; wonCzkMinor: bigint }[] = [];
+    // Výdaje: fixní předplatná (aktuální stav, plošně) + jednorázové výdaje dle měsíce zaplacení
+    const subRows = await db().select().from(subscriptions)
+      .where(and(eq(subscriptions.workspaceId, ws), isNull(subscriptions.deletedAt)));
+    let recurringMonthlyCzkMinor = 0n;
+    const oneOffByMonth = new Map<string, bigint>();
+    for (const su of subRows) {
+      const czk = toCzkMinor(su.amountMinor, su.currency, rates);
+      if (su.period === "one_off") {
+        const m = (su.paidOn ?? su.createdAt.toISOString()).slice(0, 7);
+        oneOffByMonth.set(m, (oneOffByMonth.get(m) ?? 0n) + czk);
+      } else if (su.status === "active") {
+        recurringMonthlyCzkMinor += su.period === "yearly" ? czk / 12n : czk;
+      }
+    }
+
+    const months: { month: string; wonCzkMinor: bigint; expenseCzkMinor: bigint }[] = [];
     const now = new Date();
+    const thisMonth = now.toISOString().slice(0, 7);
     for (let i = 11; i >= 0; i--) {
       const m = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1)).toISOString().slice(0, 7);
-      months.push({ month: m, wonCzkMinor: byMonth.get(m) ?? 0n });
+      months.push({
+        month: m,
+        wonCzkMinor: byMonth.get(m) ?? 0n,
+        expenseCzkMinor: recurringMonthlyCzkMinor + (oneOffByMonth.get(m) ?? 0n),
+      });
     }
+    const incomeThisMonth = byMonth.get(thisMonth) ?? 0n;
+    const expenseThisMonth = recurringMonthlyCzkMinor + (oneOffByMonth.get(thisMonth) ?? 0n);
+    const cashflowMonthCzkMinor = incomeThisMonth - expenseThisMonth;
 
     // Měsíční retainery: jen projekty, kde retainer skutečně BĚŽÍ (retainer_active)
     const retainers = await db().select({ monthly: projects.monthlyAmountMinor })
@@ -51,15 +74,13 @@ export const reportingService = {
         inArray(projects.status, ["active", "draft"])));
     const retainerMonthlyCzkMinor = retainers.reduce((a, r) => a + (r.monthly ?? 0n), 0n);
 
-    const subs = await db().select().from(subscriptions)
-      .where(and(eq(subscriptions.workspaceId, ws), isNull(subscriptions.deletedAt), eq(subscriptions.status, "active")));
-    let subsMonthlyCzkMinor = 0n;
-    for (const su of subs) {
-      const czk = toCzkMinor(su.amountMinor, su.currency, rates);
-      subsMonthlyCzkMinor += su.period === "yearly" ? czk / 12n : czk;
-    }
+    const subsMonthlyCzkMinor = recurringMonthlyCzkMinor;
 
-    return { wonTotalCzkMinor, retainerMonthlyCzkMinor, subsMonthlyCzkMinor, months, usdRate: rates.USD ?? null };
+    return {
+      wonTotalCzkMinor, retainerMonthlyCzkMinor, subsMonthlyCzkMinor, months,
+      cashflowMonthCzkMinor, incomeThisMonthCzkMinor: incomeThisMonth, expenseThisMonthCzkMinor: expenseThisMonth,
+      usdRate: rates.USD ?? null,
+    };
   },
 
   /** Hodnota pipeline po fázích (jen otevřené fáze) + počet a suma. */

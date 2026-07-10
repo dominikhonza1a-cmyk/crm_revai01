@@ -18,7 +18,8 @@ const upsertInput = z.object({
   url: z.string().trim().max(300).optional(),
   amountMinor: z.bigint().nonnegative(),
   currency: z.enum(["USD", "EUR", "CZK", "GBP"]),
-  period: z.enum(["monthly", "yearly"]),
+  period: z.enum(["monthly", "yearly", "one_off"]),
+  paidOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),   // u one_off
   notes: z.string().trim().max(1000).optional(),
 });
 
@@ -35,14 +36,17 @@ export const subscriptionsRouter = router({
       .orderBy(asc(subscriptions.name));
     const rates = await czkRates();
     let totalMonthlyCzkMinor = 0n;
+    let oneOffThisMonthCzkMinor = 0n;
+    const thisMonth = new Date().toISOString().slice(0, 7);
     const items = rows.map((r) => {
       const czk = toCzkMinor(r.amountMinor, r.currency, rates);
-      const monthlyCzkMinor = r.period === "yearly" ? czk / 12n : czk;
-      if (r.status === "active") totalMonthlyCzkMinor += monthlyCzkMinor;
+      const monthlyCzkMinor = r.period === "one_off" ? 0n : r.period === "yearly" ? czk / 12n : czk;
+      if (r.status === "active" && r.period !== "one_off") totalMonthlyCzkMinor += monthlyCzkMinor;
+      if (r.period === "one_off" && (r.paidOn ?? "").slice(0, 7) === thisMonth) oneOffThisMonthCzkMinor += czk;
       const { passwordEnc, ...rest } = r;
-      return { ...rest, hasPassword: !!passwordEnc, monthlyCzkMinor };
+      return { ...rest, hasPassword: !!passwordEnc, monthlyCzkMinor, czkMinor: czk };
     });
-    return { items, totalMonthlyCzkMinor, rates: { USD: rates.USD, EUR: rates.EUR } };
+    return { items, totalMonthlyCzkMinor, oneOffThisMonthCzkMinor, rates: { USD: rates.USD, EUR: rates.EUR } };
   }),
 
   create: protectedProcedure.input(upsertInput).mutation(async ({ ctx, input }) => {
