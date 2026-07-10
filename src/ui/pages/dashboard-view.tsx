@@ -59,14 +59,14 @@ export function DashboardView({ data }: { data: DashboardData }) {
     <div className="mx-auto max-w-6xl space-y-6">
       {/* Finance — historicky vyděláno, měsíční retainery, měsíční předplatná (náklady) */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Historicky vyděláno" value={money(Number(fin.wonTotalCzkMinor))} hint="vyhrané dealy celkem" iconSrc="/doodles/safe.svg" />
+        <StatCard label="Historicky vyděláno" value={money(Number(fin.wonTotalCzkMinor))} hint="skutečně přijaté platby" iconSrc="/doodles/safe.svg" />
         <StatCard label="Měsíční retainery" value={money(Number(fin.retainerMonthlyCzkMinor))} hint="aktivní retainer projekty / měsíc" iconSrc="/doodles/retainer.svg" />
         <Link href="/subscriptions"><StatCard label="Měsíční předplatná" value={money(Number(fin.subsMonthlyCzkMinor))} hint={`fixní náklady / měsíc${fin.usdRate ? ` · kurz $ ${fin.usdRate.toFixed(2)}` : ""}`} iconSrc="/doodles/card.svg" /></Link>
       </div>
 
       <Card>
         <SectionTitle right={<span className={`text-xs font-medium ${net >= 0 ? "text-accent" : "text-red-300"}`}>retainery − předplatná = {money(net)} /měs</span>}>
-          Vyděláno po měsících (12 měsíců)
+          Zaplaceno po měsících (12 měsíců)
         </SectionTitle>
         <MonthlyBars months={fin.months} />
       </Card>

@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, bigint, numeric, date, integer, timestamp, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, bigint, numeric, date, integer, timestamp, jsonb, boolean, index } from "drizzle-orm/pg-core";
 import { tenantColumns, auditColumns, softDelete } from "@/shared/db/columns";
 
 /**
@@ -16,6 +16,9 @@ export const projects = pgTable("project", {
   projectType: text("project_type").notNull(),
   engagementType: text("engagement_type").notNull(),   // one_off | retainer
   monthlyAmountMinor: bigint("monthly_amount_minor", { mode: "bigint" }),   // retainer CZK/měs (haléře)
+  priceMinor: bigint("price_minor", { mode: "bigint" }),                    // jednorázová cena (CZK haléře)
+  payments: jsonb("payments").notNull().default([]),                        // [{amountMinor, date, note}]
+  retainerActive: boolean("retainer_active").notNull().default(false),      // retainer běží → počítá se do dashboardu
   status: text("status").notNull().default("draft"),   // draft | active | on_hold | closed
   currentPhaseId: uuid("current_phase_id"),
   ownerId: uuid("owner_id"),

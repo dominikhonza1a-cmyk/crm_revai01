@@ -42,4 +42,17 @@ export const projectsRouter = router({
   setMonthlyAmount: protectedProcedure.use(requirePermission("projects", "write"))
     .input(z.object({ projectId: z.string().uuid(), amountMinor: z.bigint().nonnegative().nullable() }))
     .mutation(({ input }) => projectRepository.setMonthlyAmount(input.projectId, input.amountMinor)),
+
+  // finance projektu: cena, „retainer běží", evidence plateb (zálohy/doplatky)
+  setFinance: protectedProcedure.use(requirePermission("projects", "write"))
+    .input(z.object({ projectId: z.string().uuid(), priceMinor: z.bigint().nonnegative().nullable().optional(), retainerActive: z.boolean().optional() }))
+    .mutation(({ input }) => projectRepository.setFinance(input.projectId, { priceMinor: input.priceMinor, retainerActive: input.retainerActive })),
+
+  addPayment: protectedProcedure.use(requirePermission("projects", "write"))
+    .input(z.object({ projectId: z.string().uuid(), amountMinor: z.number().int().positive(), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), note: z.string().max(200).optional() }))
+    .mutation(({ input }) => projectRepository.addPayment(input.projectId, { amountMinor: input.amountMinor, date: input.date, note: input.note })),
+
+  removePayment: protectedProcedure.use(requirePermission("projects", "write"))
+    .input(z.object({ projectId: z.string().uuid(), index: z.number().int().nonnegative() }))
+    .mutation(({ input }) => projectRepository.removePayment(input.projectId, input.index)),
 });

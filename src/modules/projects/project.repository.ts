@@ -89,6 +89,36 @@ export const projectRepository = {
       .where(and(eq(projects.id, projectId), eq(projects.workspaceId, ws)));
   },
 
+  /** Finance projektu: sjednaná cena + přepínač „retainer běží". */
+  async setFinance(projectId: string, input: { priceMinor?: bigint | null; retainerActive?: boolean }): Promise<void> {
+    const ws = currentWorkspaceId();
+    await db().update(projects).set({
+      ...(input.priceMinor !== undefined ? { priceMinor: input.priceMinor } : {}),
+      ...(input.retainerActive !== undefined ? { retainerActive: input.retainerActive } : {}),
+      updatedAt: new Date(),
+    }).where(and(eq(projects.id, projectId), eq(projects.workspaceId, ws)));
+  },
+
+  /** Přidá platbu (záloha/doplatek) do evidence plateb projektu. */
+  async addPayment(projectId: string, payment: { amountMinor: number; date: string; note?: string }): Promise<void> {
+    const ws = currentWorkspaceId();
+    const p = await this.getById(projectId);
+    if (!p) throw new Error("Projekt nenalezen");
+    const payments = [...((p.payments as { amountMinor: number; date: string; note?: string }[]) ?? []), payment];
+    await db().update(projects).set({ payments, updatedAt: new Date() })
+      .where(and(eq(projects.id, projectId), eq(projects.workspaceId, ws)));
+  },
+
+  /** Odebere platbu dle indexu. */
+  async removePayment(projectId: string, index: number): Promise<void> {
+    const ws = currentWorkspaceId();
+    const p = await this.getById(projectId);
+    if (!p) throw new Error("Projekt nenalezen");
+    const payments = ((p.payments as unknown[]) ?? []).filter((_, i) => i !== index);
+    await db().update(projects).set({ payments, updatedAt: new Date() })
+      .where(and(eq(projects.id, projectId), eq(projects.workspaceId, ws)));
+  },
+
   async setCustomField(projectId: string, key: string, value: unknown | null): Promise<ProjectRow> {
     const ws = currentWorkspaceId();
     const p = await this.getById(projectId);

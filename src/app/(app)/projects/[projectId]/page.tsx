@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { trpc } from "@/ui/trpc";
-import { Card, Badge, Tabs, Loading, Empty, btnPrimary } from "@/ui/components/ui";
+import { Card, Badge, Tabs, Loading, Empty, btnPrimary, SectionTitle, money } from "@/ui/components/ui";
 import { TimelineTab, DocumentsTab } from "@/ui/components/entity-tabs";
 import { NewTaskModal, TaskStatusSelect } from "@/ui/components/entity-forms";
 import { TagPicker } from "@/ui/components/tag-picker";
@@ -93,8 +93,10 @@ export default function ProjectDetailPage() {
             <div className="flex justify-between"><span className="text-muted">Start</span><span className="text-ink">{p.startDate ?? "—"}</span></div>
             <div className="flex justify-between"><span className="text-muted">Typ zakázky</span><span className="text-ink">{p.engagementType === "retainer" ? "Retainer" : "Jednorázový"}</span></div>
             <GitRepoRow projectId={projectId} current={(p.customFields as Record<string, unknown>)?.git_repo as string | undefined} />
-            {p.engagementType === "retainer" && <RetainerRow projectId={projectId} current={p.monthlyAmountMinor} />}
           </div></Card>
+          <FinanceCard projectId={projectId} isRetainer={p.engagementType === "retainer"}
+            priceMinor={p.priceMinor} monthlyMinor={p.monthlyAmountMinor} retainerActive={p.retainerActive}
+            payments={(p.payments ?? []) as { amountMinor: number; date: string; note?: string }[]} />
           <CustomFieldsCard entityType="project" entityId={projectId} values={(p.customFields ?? {}) as Record<string, unknown>} />
         </div>
       )}
@@ -105,35 +107,96 @@ export default function ProjectDetailPage() {
   );
 }
 
-/** Mapování GitHub repa na projekt (git → timeline). Formát owner/repo; prázdné = odpojit. */
-/** Měsíční fakturace retaineru (CZK) — sčítá se na dashboardu do „Měsíční retainery". */
-function RetainerRow({ projectId, current }: { projectId: string; current: bigint | null }) {
+/** Finance projektu: sjednaná cena, evidence plateb (zálohy/doplatky), stav retaineru. */
+function FinanceCard({ projectId, isRetainer, priceMinor, monthlyMinor, retainerActive, payments }: {
+  projectId: string; isRetainer: boolean; priceMinor: bigint | null; monthlyMinor: bigint | null;
+  retainerActive: boolean; payments: { amountMinor: number; date: string; note?: string }[];
+}) {
   const utils = trpc.useUtils();
-  const [value, setValue] = useState(current != null ? String(Number(current) / 100) : "");
-  const [saved, setSaved] = useState(false);
-  const set = trpc.projects.setMonthlyAmount.useMutation({
-    onSuccess: async () => { setSaved(true); setTimeout(() => setSaved(false), 2000); await Promise.all([utils.projects.get.invalidate({ id: projectId }), utils.reporting.dashboard.invalidate()]); },
-  });
+  const refresh = () => Promise.all([utils.projects.get.invalidate({ id: projectId }), utils.reporting.dashboard.invalidate()]);
+  const [price, setPrice] = useState(priceMinor != null ? String(Number(priceMinor) / 100) : "");
+  const [monthly, setMonthly] = useState(monthlyMinor != null ? String(Number(monthlyMinor) / 100) : "");
+  const [payAmount, setPayAmount] = useState("");
+  const [payDate, setPayDate] = useState(new Date().toISOString().slice(0, 10));
+  const [payNote, setPayNote] = useState("");
+
+  const setFinance = trpc.projects.setFinance.useMutation({ onSuccess: refresh });
+  const setMonthlyM = trpc.projects.setMonthlyAmount.useMutation({ onSuccess: refresh });
+  const addPayment = trpc.projects.addPayment.useMutation({ onSuccess: async () => { setPayAmount(""); setPayNote(""); await refresh(); } });
+  const removePayment = trpc.projects.removePayment.useMutation({ onSuccess: refresh });
+
+  const paid = payments.reduce((a, x) => a + x.amountMinor, 0);
+  const priceNum = priceMinor != null ? Number(priceMinor) : null;
+  const state = priceNum == null || priceNum === 0 ? null : paid >= priceNum ? "paid" : paid > 0 ? "partial" : "unpaid";
+  const num = (v: string) => { const n = parseFloat(v.replace(",", ".")); return Number.isNaN(n) ? null : Math.round(n * 100); };
+  const inp = "w-32 rounded-lg border border-line bg-surface-2 px-2.5 py-1.5 text-xs text-ink placeholder:text-faint outline-none focus:border-accent";
+
   return (
-    <div className="flex items-center justify-between gap-3">
-      <span className="shrink-0 text-muted">Měsíční retainer (Kč)</span>
-      <div className="flex items-center gap-2">
-        <input
-          className="w-56 rounded-lg border border-line bg-surface-2 px-2.5 py-1.5 text-xs text-ink placeholder:text-faint outline-none focus:border-accent"
-          inputMode="decimal" placeholder="např. 15000" value={value} onChange={(e) => setValue(e.target.value)} />
-        <button className="rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted hover:border-accent/40 hover:text-accent disabled:opacity-60"
-          disabled={set.isPending}
-          onClick={() => {
-            const n = parseFloat(value.replace(",", "."));
-            set.mutate({ projectId, amountMinor: value.trim() && !Number.isNaN(n) ? BigInt(Math.round(n * 100)) : null });
-          }}>
-          {set.isPending ? "…" : saved ? "✓" : "Uložit"}
-        </button>
+    <Card>
+      <SectionTitle right={
+        state === "paid" ? <Badge tone="green">Zaplaceno ✓</Badge>
+        : state === "partial" ? <Badge tone="amber">Záloha {money(paid)} z {money(priceNum!)}</Badge>
+        : state === "unpaid" ? <Badge tone="red">Nezaplaceno</Badge> : undefined
+      }>Finance</SectionTitle>
+      <div className="space-y-3 text-sm">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-muted">Sjednaná cena (Kč)</span>
+          <span className="flex items-center gap-2">
+            <input className={inp} inputMode="decimal" placeholder="např. 29900" value={price} onChange={(e) => setPrice(e.target.value)}
+              onBlur={() => setFinance.mutate({ projectId, priceMinor: price.trim() && num(price) != null ? BigInt(num(price)!) : null })} />
+          </span>
+        </div>
+
+        {isRetainer && (
+          <>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted">Měsíční retainer (Kč)</span>
+              <input className={inp} inputMode="decimal" placeholder="např. 7490" value={monthly} onChange={(e) => setMonthly(e.target.value)}
+                onBlur={() => setMonthlyM.mutate({ projectId, amountMinor: monthly.trim() && num(monthly) != null ? BigInt(num(monthly)!) : null })} />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted">Retainer běží <span className="text-faint">(počítá se na dashboard)</span></span>
+              <button
+                className={`h-6 w-11 rounded-full p-0.5 transition-colors ${retainerActive ? "bg-accent-strong" : "bg-white/10"}`}
+                disabled={setFinance.isPending}
+                onClick={() => setFinance.mutate({ projectId, retainerActive: !retainerActive })}>
+                <span className={`block h-5 w-5 rounded-full bg-white transition-transform ${retainerActive ? "translate-x-5" : ""}`} />
+              </button>
+            </div>
+          </>
+        )}
+
+        <div className="border-t border-line pt-3">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-muted">Platby (zálohy a doplatky)</span>
+            <span className="font-medium text-ink">{money(paid)} přijato</span>
+          </div>
+          {payments.map((pay, i) => (
+            <div key={i} className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-xs hover:bg-white/5">
+              <span className="text-faint">{pay.date}</span>
+              <span className="flex-1 truncate text-muted">{pay.note ?? ""}</span>
+              <span className="font-medium text-ink">{money(pay.amountMinor)}</span>
+              <button className="text-red-300 hover:underline" disabled={removePayment.isPending}
+                onClick={() => removePayment.mutate({ projectId, index: i })}>×</button>
+            </div>
+          ))}
+          <div className="mt-2 flex items-center gap-1.5">
+            <input className={inp + " w-24"} inputMode="decimal" placeholder="Kč" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} />
+            <input className={inp + " w-32"} type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} />
+            <input className={inp + " flex-1"} placeholder="poznámka (záloha…)" value={payNote} onChange={(e) => setPayNote(e.target.value)} />
+            <button className="rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted hover:border-accent/40 hover:text-accent disabled:opacity-60"
+              disabled={addPayment.isPending || !num(payAmount)}
+              onClick={() => addPayment.mutate({ projectId, amountMinor: num(payAmount)!, date: payDate, note: payNote.trim() || undefined })}>
+              {addPayment.isPending ? "…" : "+ Platba"}
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
+/** Mapování GitHub repa na projekt (git → timeline). Formát owner/repo; prázdné = odpojit. */
 function GitRepoRow({ projectId, current }: { projectId: string; current?: string }) {
   const utils = trpc.useUtils();
   const [value, setValue] = useState(current ?? "");

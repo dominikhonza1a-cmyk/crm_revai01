@@ -23,16 +23,18 @@ export const reportingService = {
     const ws = currentWorkspaceId();
     const rates = await czkRates();
 
-    const won = await db().select({ amountMinor: deals.amountMinor, currency: deals.currency, wonAt: deals.wonAt })
-      .from(deals).innerJoin(pipelineStages, eq(deals.pipelineStageId, pipelineStages.id))
-      .where(and(eq(deals.workspaceId, ws), isNull(deals.deletedAt), eq(pipelineStages.kind, "won")));
+    // Historicky vyděláno = SKUTEČNĚ PŘIJATÉ platby z projektů (zálohy + doplatky, CZK)
+    const projRows = await db().select({ payments: projects.payments })
+      .from(projects).where(and(eq(projects.workspaceId, ws), isNull(projects.deletedAt)));
     let wonTotalCzkMinor = 0n;
     const byMonth = new Map<string, bigint>();
-    for (const d of won) {
-      const czk = toCzkMinor(d.amountMinor ?? 0n, d.currency ?? "CZK", rates);
-      wonTotalCzkMinor += czk;
-      const m = (d.wonAt ?? new Date()).toISOString().slice(0, 7);
-      byMonth.set(m, (byMonth.get(m) ?? 0n) + czk);
+    for (const pr of projRows) {
+      for (const pay of (pr.payments as { amountMinor: number; date: string }[]) ?? []) {
+        const czk = BigInt(Math.round(pay.amountMinor));
+        wonTotalCzkMinor += czk;
+        const m = (pay.date ?? "").slice(0, 7) || new Date().toISOString().slice(0, 7);
+        byMonth.set(m, (byMonth.get(m) ?? 0n) + czk);
+      }
     }
     const months: { month: string; wonCzkMinor: bigint }[] = [];
     const now = new Date();
@@ -41,10 +43,12 @@ export const reportingService = {
       months.push({ month: m, wonCzkMinor: byMonth.get(m) ?? 0n });
     }
 
+    // Měsíční retainery: jen projekty, kde retainer skutečně BĚŽÍ (retainer_active)
     const retainers = await db().select({ monthly: projects.monthlyAmountMinor })
       .from(projects)
       .where(and(eq(projects.workspaceId, ws), isNull(projects.deletedAt),
-        eq(projects.engagementType, "retainer"), inArray(projects.status, ["active", "draft"])));
+        eq(projects.engagementType, "retainer"), eq(projects.retainerActive, true),
+        inArray(projects.status, ["active", "draft"])));
     const retainerMonthlyCzkMinor = retainers.reduce((a, r) => a + (r.monthly ?? 0n), 0n);
 
     const subs = await db().select().from(subscriptions)
