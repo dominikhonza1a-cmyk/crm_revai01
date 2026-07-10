@@ -64,7 +64,6 @@ export const reportingService = {
     }
     const incomeThisMonth = byMonth.get(thisMonth) ?? 0n;
     const expenseThisMonth = recurringMonthlyCzkMinor + (oneOffByMonth.get(thisMonth) ?? 0n);
-    const cashflowMonthCzkMinor = incomeThisMonth - expenseThisMonth;
 
     // Měsíční retainery: jen projekty, kde retainer skutečně BĚŽÍ (retainer_active)
     const retainers = await db().select({ monthly: projects.monthlyAmountMinor })
@@ -73,6 +72,9 @@ export const reportingService = {
         eq(projects.engagementType, "retainer"), eq(projects.retainerActive, true),
         inArray(projects.status, ["active", "draft"])));
     const retainerMonthlyCzkMinor = retainers.reduce((a, r) => a + (r.monthly ?? 0n), 0n);
+    // Cashflow měsíce = OPAKOVANÉ příjmy (běžící retainery) − výdaje měsíce.
+    // Záměrně ne skutečné platby — historické jednorázovky by měsíc zkreslily.
+    const cashflowMonthCzkMinor = retainerMonthlyCzkMinor - expenseThisMonth;
 
     const subsMonthlyCzkMinor = recurringMonthlyCzkMinor;
 

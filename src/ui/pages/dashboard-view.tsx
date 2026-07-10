@@ -142,9 +142,9 @@ export function DashboardView({ data }: { data: DashboardData }) {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Historicky vyděláno" value={money(Number(fin.wonTotalCzkMinor))} hint="skutečně přijaté platby" iconSrc="/doodles/safe.svg" />
         <StatCard label="Měsíční retainery" value={money(Number(fin.retainerMonthlyCzkMinor))} hint="běžící retainery — účtují se samy 1. den měsíce" iconSrc="/doodles/retainer.svg" />
-        <Link href="/subscriptions"><StatCard label="Měsíční náklady" value={money(Number(fin.subsMonthlyCzkMinor))} hint={`fixní předplatná / měsíc${fin.usdRate ? ` · kurz $ ${fin.usdRate.toFixed(2)}` : ""}`} iconSrc="/doodles/card.svg" /></Link>
+        <Link href="/subscriptions" className="block h-full"><StatCard label="Měsíční náklady" value={money(Number(fin.subsMonthlyCzkMinor))} hint={`fixní předplatná / měsíc${fin.usdRate ? ` · kurz $ ${fin.usdRate.toFixed(2)}` : ""}`} iconSrc="/doodles/card.svg" /></Link>
         <StatCard label="Cashflow tento měsíc" value={`${Number(fin.cashflowMonthCzkMinor) >= 0 ? "+" : ""}${money(Number(fin.cashflowMonthCzkMinor))}`}
-          hint={`příjmy ${money(Number(fin.incomeThisMonthCzkMinor))} − výdaje ${money(Number(fin.expenseThisMonthCzkMinor))}`}
+          hint={`retainery ${money(Number(fin.retainerMonthlyCzkMinor))} − výdaje ${money(Number(fin.expenseThisMonthCzkMinor))}`}
           iconSrc={Number(fin.cashflowMonthCzkMinor) >= 0 ? "/doodles/trophy.png" : "/doodles/icon-clock.png"} />
       </div>
 
@@ -156,10 +156,10 @@ export function DashboardView({ data }: { data: DashboardData }) {
       </Card>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Link href="/tasks"><StatCard label="Moje práce" value={data.myWork.count} hint="otevřené úkoly" iconSrc="/doodles/icon-tasks.png" /></Link>
+        <Link href="/tasks" className="block h-full"><StatCard label="Moje práce" value={data.myWork.count} hint="otevřené úkoly" iconSrc="/doodles/icon-tasks.png" /></Link>
         <StatCard label="Win-rate" value={data.win.winRatePct != null ? `${data.win.winRatePct}%` : "—"} hint={`vyhráno ${data.win.won} · prohráno ${data.win.lost}`} iconSrc="/doodles/icon-medal.png" doodle="/doodles/trophy.png" />
-        <Link href="/tasks"><StatCard label="Po termínu" value={data.overdue.count} hint="overdue úkoly" iconSrc="/doodles/icon-clock.png" /></Link>
-        <Link href="/deals"><StatCard label="Pipeline value" value={money(totalPipeline)} hint="otevřené dealy" iconSrc="/doodles/icon-coins.png" /></Link>
+        <Link href="/tasks" className="block h-full"><StatCard label="Po termínu" value={data.overdue.count} hint="overdue úkoly" iconSrc="/doodles/icon-clock.png" /></Link>
+        <Link href="/deals" className="block h-full"><StatCard label="Pipeline value" value={money(totalPipeline)} hint="otevřené dealy" iconSrc="/doodles/icon-coins.png" /></Link>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

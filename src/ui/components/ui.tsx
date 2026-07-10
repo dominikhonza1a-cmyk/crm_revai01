@@ -20,7 +20,7 @@ export function StatCard({ label, value, hint, icon, iconSrc, tone = "accent", d
     blue: "bg-sky-400/10 text-sky-400", pink: "bg-pink-400/10 text-pink-400",
   };
   return (
-    <div className="relative rounded-2xl border border-line bg-surface p-5 transition-colors hover:border-accent/40">
+    <div className="relative h-full rounded-2xl border border-line bg-surface p-5 transition-colors hover:border-accent/40">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-muted">{label}</span>
         {iconSrc
