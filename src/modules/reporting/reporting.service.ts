@@ -124,6 +124,17 @@ export const reportingService = {
       .groupBy(organizations.name).orderBy(desc(sql`sum(${deals.amountMinor})`)).limit(limit);
   },
 
+  /** Dnešní úkoly: po termínu + s termínem dnes (pro dashboard „Dnes"). */
+  async todayTasks() {
+    const ws = currentWorkspaceId();
+    const dayEnd = new Date(); dayEnd.setHours(23, 59, 59, 999);
+    return db().select({ id: tasks.id, title: tasks.title, dueAt: tasks.dueAt, priority: tasks.priority, type: tasks.type })
+      .from(tasks)
+      .where(and(eq(tasks.workspaceId, ws), isNull(tasks.deletedAt),
+        sql`${tasks.status} not in ('done','canceled')`, sql`${tasks.dueAt} is not null`, lt(tasks.dueAt, dayEnd)))
+      .orderBy(tasks.dueAt).limit(8);
+  },
+
   /** Moje práce — počet otevřených tasků přiřazených uživateli. */
   async myWork(userId: string) {
     const ws = currentWorkspaceId();

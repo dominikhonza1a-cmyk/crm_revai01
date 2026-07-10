@@ -89,6 +89,17 @@ export const projectRepository = {
       .where(and(eq(projects.id, projectId), eq(projects.workspaceId, ws)));
   },
 
+  /** Ruční založení projektu (mimo Won automatiku) — bez fází, rovnou aktivní. */
+  async createDirect(input: { organizationId: string; name: string; projectType: string; engagementType: string }): Promise<{ id: string }> {
+    const ws = currentWorkspaceId();
+    const id = crypto.randomUUID();
+    await db().insert(projects).values({
+      id, workspaceId: ws, organizationId: input.organizationId,
+      name: input.name, projectType: input.projectType, engagementType: input.engagementType, status: "active",
+    });
+    return { id };
+  },
+
   /** Finance projektu: sjednaná cena + přepínač „retainer běží". */
   async setFinance(projectId: string, input: { priceMinor?: bigint | null; retainerActive?: boolean }): Promise<void> {
     const ws = currentWorkspaceId();

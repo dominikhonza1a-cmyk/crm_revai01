@@ -14,11 +14,13 @@ export interface KanbanDeal {
   probability: number;
 }
 
-export function KanbanBoard({ stages, deals, onMove, busy }: {
+export function KanbanBoard({ stages, deals, onMove, onCardClick, busy }: {
   stages: KanbanStage[];
   deals: KanbanDeal[];
   /** Volá se při přetažení karty do JINÉ fáze (vč. won/lost zón). */
   onMove: (dealId: string, toStage: KanbanStage) => void;
+  /** Klik na kartu (editace dealu). */
+  onCardClick?: (dealId: string) => void;
   busy?: boolean;
 }) {
   const [overStage, setOverStage] = useState<string | null>(null);
@@ -60,6 +62,8 @@ export function KanbanBoard({ stages, deals, onMove, busy }: {
                 {items.map((d) => (
                   <div key={d.id} draggable
                     onDragStart={(e) => e.dataTransfer.setData("text/deal-id", d.id)}
+                    onClick={() => onCardClick?.(d.id)}
+                    title="Klik = upravit deal"
                     className="cursor-grab rounded-xl border border-line bg-surface p-3 transition-colors hover:border-accent/40 active:cursor-grabbing">
                     <div className="text-sm font-medium text-ink">{d.title}</div>
                     <div className="mt-1.5 flex items-center justify-between text-xs text-faint">

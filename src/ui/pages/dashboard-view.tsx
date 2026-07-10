@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { trpc } from "@/ui/trpc";
 import { StatCard, Card, SectionTitle, Badge, Empty, Donut, money } from "@/ui/components/ui";
 
 const STATUS_LABEL: Record<string, string> = { draft: "Draft", active: "Aktivní", on_hold: "Pozastavené", closed: "Uzavřené" };
@@ -45,6 +48,66 @@ function MonthlyBars({ months }: { months: DashboardData["finance"]["months"] })
   );
 }
 
+/** „Dnes" — schůzky z MÉHO kalendáře (živě) + úkoly do dneška. Per-user blok. */
+function TodayCard() {
+  const agenda = trpc.integrations.todayAgenda.useQuery(undefined, { staleTime: 120_000 });
+  const tasks = trpc.reporting.todayTasks.useQuery();
+  const now = new Date();
+  const time = (iso: string) => new Date(iso).toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit" });
+
+  return (
+    <Card>
+      <SectionTitle right={<span className="text-xs text-faint">{now.toLocaleDateString("cs-CZ", { weekday: "long", day: "numeric", month: "long" })}</span>}>
+        Dnes
+      </SectionTitle>
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div>
+          <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-faint">📅 Schůzky (můj kalendář)</h3>
+          {!agenda.data ? <p className="text-sm text-faint">Načítám…</p>
+            : !agenda.data.connected ? (
+              <p className="text-sm text-faint">Google kalendář nepřipojen — <Link href="/settings" className="text-accent hover:underline">připojit v Nastavení</Link></p>
+            ) : agenda.data.events.length === 0 ? (
+              <p className="text-sm text-faint">Dnes žádné schůzky 🎉</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {agenda.data.events.map((e, i) => (
+                  <li key={i} className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm hover:bg-white/5">
+                    <span className="shrink-0 font-medium text-accent">{e.allDay ? "celý den" : time(e.start)}</span>
+                    <span className="min-w-0 flex-1 truncate text-ink">{e.summary}</span>
+                    {e.meetLink && <a href={e.meetLink} target="_blank" rel="noreferrer" className="shrink-0 text-xs text-accent hover:underline">Meet ↗</a>}
+                  </li>
+                ))}
+              </ul>
+            )}
+        </div>
+        <div>
+          <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-faint">✅ Úkoly do dneška</h3>
+          {!tasks.data ? <p className="text-sm text-faint">Načítám…</p>
+            : tasks.data.length === 0 ? <p className="text-sm text-faint">Nic nehoří 🎉</p>
+            : (
+              <ul className="space-y-1.5">
+                {tasks.data.map((t) => {
+                  const overdue = t.dueAt && new Date(t.dueAt) < new Date(new Date().setHours(0, 0, 0, 0));
+                  return (
+                    <li key={t.id}>
+                      <Link href="/tasks" className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm hover:bg-white/5">
+                        <Badge tone={overdue ? "red" : t.priority === "p1" ? "red" : t.priority === "p2" ? "amber" : "slate"}>
+                          {overdue ? "po termínu" : t.priority.toUpperCase()}
+                        </Badge>
+                        <span className="min-w-0 flex-1 truncate text-ink">{t.title}</span>
+                        {t.dueAt && <span className="shrink-0 text-xs text-faint">{new Date(t.dueAt).toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric" })}</span>}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 /** Prezentační dashboard — dostane data, nic nefetchuje (použito v /dashboard i pro náhledy). */
 export function DashboardView({ data }: { data: DashboardData }) {
   const totalPipeline = data.pipeline.reduce((s, p) => s + Number(p.valueMinor), 0);
@@ -57,6 +120,8 @@ export function DashboardView({ data }: { data: DashboardData }) {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
+      <TodayCard />
+
       {/* Finance — historicky vyděláno, měsíční retainery, měsíční předplatná (náklady) */}
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard label="Historicky vyděláno" value={money(Number(fin.wonTotalCzkMinor))} hint="skutečně přijaté platby" iconSrc="/doodles/safe.svg" />

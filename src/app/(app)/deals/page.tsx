@@ -5,6 +5,7 @@ import Link from "next/link";
 import { trpc } from "@/ui/trpc";
 import { Loading, Empty, Modal, btnPrimary, btnGhost, fieldInput, fieldLabel } from "@/ui/components/ui";
 import { KanbanBoard, type KanbanStage } from "@/ui/components/kanban";
+import { EditDealModal } from "@/ui/components/edit-modals";
 
 const LOST_REASONS = [
   { value: "price", label: "Cena" },
@@ -24,6 +25,7 @@ export default function DealsPage() {
   const [lostReason, setLostReason] = useState<(typeof LOST_REASONS)[number]["value"]>("price");
   const [lostNote, setLostNote] = useState("");
   const [banner, setBanner] = useState<string | null>(null);
+  const [editDealId, setEditDealId] = useState<string | null>(null);
 
   const move = trpc.deals.moveStage.useMutation({
     onSuccess: async (_res, vars) => {
@@ -71,7 +73,7 @@ export default function DealsPage() {
 
       {deals.data.items.length === 0
         ? <Empty>Zatím žádné dealy. Přidej první přes „+ Nový".</Empty>
-        : <KanbanBoard stages={stages.data} deals={deals.data.items} onMove={onMove} busy={move.isPending} />}
+        : <KanbanBoard stages={stages.data} deals={deals.data.items} onMove={onMove} onCardClick={setEditDealId} busy={move.isPending} />}
 
       {/* Potvrzení výhry */}
       {pending && pending.stage.kind === "won" && (

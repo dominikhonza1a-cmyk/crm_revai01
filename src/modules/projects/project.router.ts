@@ -43,6 +43,16 @@ export const projectsRouter = router({
     .input(z.object({ projectId: z.string().uuid(), amountMinor: z.bigint().nonnegative().nullable() }))
     .mutation(({ input }) => projectRepository.setMonthlyAmount(input.projectId, input.amountMinor)),
 
+  // ruční založení projektu (Won → projekt zůstává automatika; tohle je pro retainery/ad-hoc)
+  create: protectedProcedure.use(requirePermission("projects", "write"))
+    .input(z.object({
+      organizationId: z.string().uuid(),
+      name: z.string().trim().min(1).max(200),
+      projectType: z.enum(["chatbot_voicebot", "process_automation", "custom_ai"]),
+      engagementType: z.enum(["one_off", "retainer"]),
+    }))
+    .mutation(({ input }) => projectRepository.createDirect(input)),
+
   // finance projektu: cena, „retainer běží", evidence plateb (zálohy/doplatky)
   setFinance: protectedProcedure.use(requirePermission("projects", "write"))
     .input(z.object({ projectId: z.string().uuid(), priceMinor: z.bigint().nonnegative().nullable().optional(), retainerActive: z.boolean().optional() }))

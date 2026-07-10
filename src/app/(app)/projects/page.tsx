@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { trpc } from "@/ui/trpc";
-import { Card, Badge, Loading, Empty } from "@/ui/components/ui";
+import { Card, Badge, Loading, Empty, btnPrimary } from "@/ui/components/ui";
+import { NewProjectModal } from "@/ui/components/new-entity-modals";
 
 const STATUS: Record<string, { label: string; tone: "slate" | "green" | "amber" }> = {
   draft: { label: "Draft", tone: "slate" },
@@ -14,12 +16,19 @@ const TYPE: Record<string, string> = { chatbot_voicebot: "Chatbot/Voicebot", pro
 
 export default function ProjectsPage() {
   const { data, isLoading, error } = trpc.projects.list.useQuery(undefined);
+  const [creating, setCreating] = useState(false);
   if (error) return <div className="rounded-2xl border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-300">Chyba: {error.message}</div>;
   if (isLoading || !data) return <Loading />;
-  if (data.items.length === 0) return <Empty>Zatím žádné projekty. Vznikají automaticky z vyhraných dealů.</Empty>;
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted">Vyhrané dealy zakládají projekty samy — tady přidáš retainer nebo ad-hoc zakázku ručně.</p>
+        <button className={btnPrimary} onClick={() => setCreating(true)}>+ Nový projekt</button>
+      </div>
+      {creating && <NewProjectModal onClose={() => setCreating(false)} />}
+      {data.items.length === 0 ? <Empty doodle="/doodles/rocket.png">Zatím žádné projekty</Empty> : (
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {data.items.map((p) => {
         const st = STATUS[p.status];
         return (
@@ -38,6 +47,8 @@ export default function ProjectsPage() {
           </Link>
         );
       })}
+      </div>
+      )}
     </div>
   );
 }

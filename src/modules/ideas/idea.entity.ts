@@ -6,6 +6,7 @@ export const ideas = pgTable("idea", {
   workspaceId: uuid("workspace_id").notNull(),
   title: text("title").notNull().default("Nový nápad"),
   content: text("content").notNull().default(""),
+  parentId: uuid("parent_id"),   // podstránka (hierarchie jako v Notionu)
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   createdBy: uuid("created_by"),

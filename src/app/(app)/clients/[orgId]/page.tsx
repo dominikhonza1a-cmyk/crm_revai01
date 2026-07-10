@@ -9,6 +9,7 @@ import { TimelineTab, DocumentsTab } from "@/ui/components/entity-tabs";
 import { NewContactModal } from "@/ui/components/entity-forms";
 import { TagPicker } from "@/ui/components/tag-picker";
 import { CustomFieldsCard } from "@/ui/components/custom-fields-card";
+import { EditClientModal } from "@/ui/components/edit-modals";
 
 const LIFECYCLE: Record<string, { label: string; tone: "slate" | "green" | "amber" | "blue" }> = {
   prospect: { label: "Prospekt", tone: "blue" }, active_client: { label: "Klient", tone: "green" },
@@ -22,6 +23,7 @@ const TABS = [
 export default function ClientDetailPage() {
   const orgId = useParams().orgId as string;
   const [tab, setTab] = useState("overview");
+  const [editing, setEditing] = useState(false);
   const org = trpc.organizations.get.useQuery({ id: orgId });
 
   if (org.isLoading) return <Loading />;
@@ -36,7 +38,12 @@ export default function ClientDetailPage() {
         <h1 className="text-2xl font-semibold text-ink">{o.name}</h1>
         {lc && <Badge tone={lc.tone}>{lc.label}</Badge>}
         <TagPicker entityType="organization" entityId={orgId} />
+        <span className="flex-1" />
+        <button className="rounded-xl border border-line px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent/40 hover:text-accent"
+          onClick={() => setEditing(true)}>✎ Upravit</button>
       </div>
+      {editing && <EditClientModal onClose={() => setEditing(false)}
+        org={{ id: orgId, name: o.name, website: o.website, industry: o.industry, employeeBand: o.employeeBand, lifecycleStage: o.lifecycleStage }} />}
       <Tabs tabs={TABS} active={tab} onChange={setTab} />
 
       {tab === "overview" && (

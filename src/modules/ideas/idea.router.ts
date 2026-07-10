@@ -12,14 +12,25 @@ import { ideas } from "./idea.entity";
  * Detail se ukládá autosave (updateContent) — bez tlačítka Uložit.
  */
 export const ideasRouter = router({
+  /** Kořenové nápady (podstránky se zobrazují v detailu rodiče). */
   list: protectedProcedure.query(async () => {
     const ws = currentWorkspaceId();
     return db().select({
       id: ideas.id, title: ideas.title,
       snippet: sql<string>`left(${ideas.content}, 180)`,
       updatedAt: ideas.updatedAt,
+      childCount: sql<number>`(select count(*)::int from idea c where c.parent_id = ${ideas.id} and c.deleted_at is null)`,
     }).from(ideas)
-      .where(and(eq(ideas.workspaceId, ws), isNull(ideas.deletedAt)))
+      .where(and(eq(ideas.workspaceId, ws), isNull(ideas.deletedAt), isNull(ideas.parentId)))
+      .orderBy(desc(ideas.updatedAt));
+  }),
+
+  /** Podstránky nápadu (jako v Notionu). */
+  children: protectedProcedure.input(z.object({ id: z.string().uuid() })).query(async ({ input }) => {
+    const ws = currentWorkspaceId();
+    return db().select({ id: ideas.id, title: ideas.title, snippet: sql<string>`left(${ideas.content}, 120)`, updatedAt: ideas.updatedAt })
+      .from(ideas)
+      .where(and(eq(ideas.workspaceId, ws), eq(ideas.parentId, input.id), isNull(ideas.deletedAt)))
       .orderBy(desc(ideas.updatedAt));
   }),
 
@@ -32,11 +43,11 @@ export const ideasRouter = router({
   }),
 
   create: protectedProcedure
-    .input(z.object({ title: z.string().trim().max(200).optional() }))
+    .input(z.object({ title: z.string().trim().max(200).optional(), parentId: z.string().uuid().optional() }))
     .mutation(async ({ ctx, input }) => {
       const ws = currentWorkspaceId();
       const id = randomUUID();
-      await db().insert(ideas).values({ id, workspaceId: ws, title: input.title?.trim() || "Nový nápad", createdBy: ctx.userId });
+      await db().insert(ideas).values({ id, workspaceId: ws, title: input.title?.trim() || (input.parentId ? "Nová podstránka" : "Nový nápad"), parentId: input.parentId ?? null, createdBy: ctx.userId });
       return { id };
     }),
 

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Pošta: obálka v doodle stylu -->
+  <g stroke="#F4ECDD" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 20.5 Q8.5 17.5 12 17 L52 15.5 Q55.5 15.4 55.8 18.8 L57.5 43 Q57.7 46.5 54.2 46.8 L13.5 48.5 Q10 48.7 9.7 45.2 Z"/>
+    <!-- chlopeň -->
+    <path d="M10 20 L31.5 34.5 Q33 35.4 34.4 34.3 L55.5 17.5"/>
+  </g>
+  <!-- pohybové čárky (nová pošta) -->
+  <g stroke="#FFC93C" stroke-width="2.2" stroke-linecap="round">
+    <path d="M3 27 L6.5 27.2"/>
+    <path d="M2 34 L6 34.2"/>
+  </g>
+  <path d="M56 6 L57.1 9.2 L60.2 10.3 L57.1 11.4 L56 14.6 L54.9 11.4 L51.8 10.3 L54.9 9.2 Z" fill="#7B5EA7"/>
+  <circle cx="12" cy="56" r="1.9" fill="#9CB380"/>
+</svg>
