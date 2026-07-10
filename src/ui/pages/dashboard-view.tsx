@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { trpc } from "@/ui/trpc";
 import { StatCard, Card, SectionTitle, Badge, Empty, Donut, money } from "@/ui/components/ui";
 
@@ -124,8 +125,12 @@ function TodayCard() {
   );
 }
 
+type Period = "month" | "quarter" | "year";
+const PERIOD_LABEL: Record<Period, string> = { month: "Měsíc", quarter: "Kvartál", year: "Rok" };
+
 /** Prezentační dashboard — dostane data, nic nefetchuje (použito v /dashboard i pro náhledy). */
 export function DashboardView({ data }: { data: DashboardData }) {
+  const [period, setPeriod] = useState<Period>("month");
   const totalPipeline = data.pipeline.reduce((s, p) => s + Number(p.valueMinor), 0);
   const maxStage = Math.max(1, ...data.pipeline.map((p) => Number(p.valueMinor) || p.count));
   const totalProjects = data.projStatus.reduce((s, p) => s + p.count, 0);
@@ -133,6 +138,26 @@ export function DashboardView({ data }: { data: DashboardData }) {
 
   const fin = data.finance;
   const net = Number(fin.retainerMonthlyCzkMinor) - Number(fin.subsMonthlyCzkMinor);
+
+  // Cashflow za zvolené období: retainery a fixní náklady × počet měsíců + jednorázové výdaje v období.
+  // Jednorázové výdaje měsíce = expense měsíce − fixní (obojí máme v months).
+  const nowD = new Date();
+  const thisYear = nowD.getFullYear();
+  const q = Math.floor(nowD.getMonth() / 3);
+  const periodMonths: string[] = period === "month"
+    ? [nowD.toISOString().slice(0, 7)]
+    : period === "quarter"
+      ? [0, 1, 2].map((i) => `${thisYear}-${String(q * 3 + i + 1).padStart(2, "0")}`)
+      : Array.from({ length: 12 }, (_, i) => `${thisYear}-${String(i + 1).padStart(2, "0")}`);
+  const subsM = Number(fin.subsMonthlyCzkMinor);
+  const oneOffInPeriod = fin.months
+    .filter((m) => periodMonths.includes(m.month))
+    .reduce((a, m) => a + Math.max(0, Number(m.expenseCzkMinor) - subsM), 0);
+  const nMonths = periodMonths.length;
+  const periodIncome = Number(fin.retainerMonthlyCzkMinor) * nMonths;
+  const periodExpense = subsM * nMonths + oneOffInPeriod;
+  const periodCashflow = periodIncome - periodExpense;
+  const periodTitle = period === "month" ? "tento měsíc" : period === "quarter" ? `${q + 1}. kvartál` : `rok ${thisYear}`;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -143,13 +168,25 @@ export function DashboardView({ data }: { data: DashboardData }) {
         <StatCard label="Historicky vyděláno" value={money(Number(fin.wonTotalCzkMinor))} hint="skutečně přijaté platby" iconSrc="/doodles/safe.svg" />
         <StatCard label="Měsíční retainery" value={money(Number(fin.retainerMonthlyCzkMinor))} hint="běžící retainery — účtují se samy 1. den měsíce" iconSrc="/doodles/retainer.svg" />
         <Link href="/subscriptions" className="block h-full"><StatCard label="Měsíční náklady" value={money(Number(fin.subsMonthlyCzkMinor))} hint={`fixní předplatná / měsíc${fin.usdRate ? ` · kurz $ ${fin.usdRate.toFixed(2)}` : ""}`} iconSrc="/doodles/card.svg" /></Link>
-        <StatCard label="Cashflow tento měsíc" value={`${Number(fin.cashflowMonthCzkMinor) >= 0 ? "+" : ""}${money(Number(fin.cashflowMonthCzkMinor))}`}
-          hint={`retainery ${money(Number(fin.retainerMonthlyCzkMinor))} − výdaje ${money(Number(fin.expenseThisMonthCzkMinor))}`}
-          iconSrc={Number(fin.cashflowMonthCzkMinor) >= 0 ? "/doodles/trophy.png" : "/doodles/icon-clock.png"} />
+        <StatCard label={`Cashflow — ${periodTitle}`} value={`${periodCashflow >= 0 ? "+" : ""}${money(periodCashflow)}`}
+          hint={`retainery ${money(periodIncome)} − výdaje ${money(periodExpense)}`}
+          iconSrc={periodCashflow >= 0 ? "/doodles/trophy.png" : "/doodles/icon-clock.png"} />
       </div>
 
       <Card>
-        <SectionTitle right={<span className={`text-xs font-medium ${net >= 0 ? "text-accent" : "text-red-300"}`}>fixně: retainery − náklady = {money(net)} /měs</span>}>
+        <SectionTitle right={
+          <span className="flex items-center gap-3">
+            <span className={`hidden text-xs font-medium sm:inline ${net >= 0 ? "text-accent" : "text-red-300"}`}>fixně {money(net)} /měs</span>
+            <span className="inline-flex rounded-xl border border-line bg-surface p-0.5">
+              {(Object.keys(PERIOD_LABEL) as Period[]).map((k) => (
+                <button key={k} onClick={() => setPeriod(k)}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${period === k ? "bg-accent-strong text-[#08110c]" : "text-muted hover:text-ink"}`}>
+                  {PERIOD_LABEL[k]}
+                </button>
+              ))}
+            </span>
+          </span>
+        }>
           Cashflow po měsících — příjmy ↑ / výdaje ↓
         </SectionTitle>
         <CashflowBars months={fin.months} />

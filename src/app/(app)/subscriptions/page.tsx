@@ -14,6 +14,7 @@ export default function SubscriptionsPage() {
   const list = trpc.subscriptions.list.useQuery();
   const [edit, setEdit] = useState<EditState>(null);
   const [revealed, setRevealed] = useState<Record<string, string>>({});
+  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));   // jednorázové dle měsíce
 
   const refresh = () => Promise.all([utils.subscriptions.list.invalidate(), utils.reporting.dashboard.invalidate()]);
   const create = trpc.subscriptions.create.useMutation({ onSuccess: async () => { setEdit(null); await refresh(); } });
@@ -23,6 +24,17 @@ export default function SubscriptionsPage() {
 
   if (list.isLoading) return <Loading />;
   const items = list.data?.items ?? [];
+  const recurring = items.filter((s) => s.period !== "one_off");
+  const oneOffAll = items.filter((s) => s.period === "one_off");
+  const oneOff = oneOffAll.filter((s) => (s.paidOn ?? "").slice(0, 7) === month);
+  const oneOffMonthCzk = oneOff.reduce((a, s) => a + Number(s.czkMinor), 0);
+  const monthLabel = new Date(`${month}-01`).toLocaleDateString("cs-CZ", { month: "long", year: "numeric" });
+  const shiftMonth = (d: number) => {
+    const [y, m] = month.split("-").map(Number);
+    const nd = new Date(Date.UTC(y!, m! - 1 + d, 1));
+    setMonth(nd.toISOString().slice(0, 7));
+  };
+  const isThisMonth = month === new Date().toISOString().slice(0, 7);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,15 +65,12 @@ export default function SubscriptionsPage() {
       {!items.length ? (
         <Empty doodle="/doodles/card.svg">Zatím žádné náklady</Empty>
       ) : (
+        <>
         <Card>
-          <SectionTitle right={
-            <span className="text-right">
-              <span className="font-display text-xl tracking-wide text-ink">{money(Number(list.data!.totalMonthlyCzkMinor))} <span className="text-xs font-sans tracking-normal text-faint">/ měsíc fixně</span></span>
-              {Number(list.data!.oneOffThisMonthCzkMinor) > 0 && <span className="block text-xs text-faint">+ {money(Number(list.data!.oneOffThisMonthCzkMinor))} jednorázově tento měsíc</span>}
-            </span>
-          }>
-            Náklady
+          <SectionTitle right={<span className="font-display text-xl tracking-wide text-ink">{money(Number(list.data!.totalMonthlyCzkMinor))} <span className="text-xs font-sans tracking-normal text-faint">/ měsíc</span></span>}>
+            Fixní předplatná
           </SectionTitle>
+          {!recurring.length ? <p className="text-sm text-faint">Žádná pravidelná předplatná</p> : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -71,43 +80,38 @@ export default function SubscriptionsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {items.map((s) => (
-                  <tr key={s.id} className="hover:bg-white/5">
-                    <td className="py-2.5 pr-3">
-                      <span className="font-medium text-ink">{s.name}</span>
-                      {s.status === "canceled" && <Badge tone="slate">zrušené</Badge>}
-                      {s.url && <a className="ml-1.5 text-xs text-accent hover:underline" href={s.url.startsWith("http") ? s.url : `https://${s.url}`} target="_blank" rel="noreferrer">↗</a>}
-                      {s.notes && <div className="text-xs text-faint">{s.notes}</div>}
-                    </td>
-                    <td className="py-2.5 pr-3 text-muted">{s.purpose ?? "—"}</td>
-                    <td className="py-2.5 pr-3 text-muted">{s.email ?? "—"}</td>
-                    <td className="py-2.5 pr-3">
-                      {!s.hasPassword ? <span className="text-faint">—</span> : revealed[s.id] ? (
-                        <span className="flex items-center gap-1.5">
-                          <code className="rounded bg-white/5 px-1.5 py-0.5 text-xs text-ink">{revealed[s.id]}</code>
-                          <button className="text-xs text-faint hover:text-muted" title="Zkopírovat" onClick={() => navigator.clipboard.writeText(revealed[s.id] ?? "")}>⧉</button>
-                          <button className="text-xs text-faint hover:text-muted" onClick={() => showPassword(s.id)}>skrýt</button>
-                        </span>
-                      ) : (
-                        <button className="text-xs text-accent hover:underline" disabled={reveal.isPending} onClick={() => showPassword(s.id)}>••••• zobrazit</button>
-                      )}
-                    </td>
-                    <td className="py-2.5 pr-3 text-right text-muted">{(Number(s.amountMinor) / 100).toLocaleString("cs-CZ")} {s.currency}{s.period === "one_off" ? ` · ${s.paidOn ? new Date(s.paidOn).toLocaleDateString("cs-CZ") : "jednorázově"}` : s.period === "yearly" ? "/rok" : "/měs"}</td>
-                    <td className="py-2.5 pr-3 text-right font-medium text-ink">{s.period === "one_off" ? <span className="text-faint">jednoráz. {money(Number(s.czkMinor))}</span> : money(Number(s.monthlyCzkMinor))}</td>
-                    <td className="py-2.5 text-right">
-                      <button className="text-xs text-faint hover:text-accent" onClick={() => setEdit({
-                        id: s.id, name: s.name, purpose: s.purpose ?? "", email: s.email ?? "", password: "",
-                        url: s.url ?? "", amount: String(Number(s.amountMinor) / 100), currency: s.currency as never, period: s.period as never, paidOn: s.paidOn ?? new Date().toISOString().slice(0, 10), notes: s.notes ?? "",
-                      })}>Upravit</button>
-                      <button className="ml-2 text-xs text-red-300 hover:underline" disabled={remove.isPending}
-                        onClick={() => { if (confirm(`Smazat předplatné ${s.name}?`)) remove.mutate({ id: s.id }); }}>×</button>
-                    </td>
-                  </tr>
-                ))}
+                {recurring.map((s) => <SubRow key={s.id} s={s} revealed={revealed} showPassword={showPassword} revealPending={reveal.isPending} onEdit={setEdit} onRemove={(id, name) => { if (confirm(`Smazat ${name}?`)) remove.mutate({ id }); }} removePending={remove.isPending} />)}
               </tbody>
             </table>
           </div>
+          )}
         </Card>
+
+        <Card>
+          <SectionTitle right={
+            <span className="flex items-center gap-3">
+              <span className="font-display text-xl tracking-wide text-ink">{money(oneOffMonthCzk)}</span>
+              <span className="inline-flex items-center rounded-xl border border-line bg-surface">
+                <button className="px-2.5 py-1 text-muted hover:text-ink" onClick={() => shiftMonth(-1)}>‹</button>
+                <span className="px-1 text-xs font-medium text-ink">{monthLabel}{isThisMonth ? "" : ""}</span>
+                <button className="px-2.5 py-1 text-muted hover:text-ink disabled:opacity-30" onClick={() => shiftMonth(1)} disabled={isThisMonth}>›</button>
+              </span>
+            </span>
+          }>
+            Jednorázové výdaje
+          </SectionTitle>
+          {!oneOff.length ? <p className="text-sm text-faint">V tomto měsíci žádné jednorázové výdaje</p> : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <tbody className="divide-y divide-line">
+                {oneOff.map((s) => <SubRow key={s.id} s={s} revealed={revealed} showPassword={showPassword} revealPending={reveal.isPending} onEdit={setEdit} onRemove={(id, name) => { if (confirm(`Smazat ${name}?`)) remove.mutate({ id }); }} removePending={remove.isPending} />)}
+              </tbody>
+            </table>
+          </div>
+          )}
+          {isThisMonth && <p className="mt-3 text-xs text-faint">Výdaje tohoto měsíce na dashboardu = {money(Number(list.data!.totalMonthlyCzkMinor) + oneOffMonthCzk)} (fixní + jednorázové)</p>}
+        </Card>
+        </>
       )}
 
       {edit && (
@@ -146,5 +150,55 @@ export default function SubscriptionsPage() {
         </Modal>
       )}
     </div>
+  );
+}
+
+type SubItem = {
+  id: string; name: string; purpose: string | null; email: string | null; url: string | null;
+  amountMinor: bigint; currency: string; period: string; paidOn: string | null; notes: string | null;
+  status: string; hasPassword: boolean; monthlyCzkMinor: bigint; czkMinor: bigint;
+};
+
+/** Řádek nákladu — sdílený pro fixní i jednorázové. */
+function SubRow({ s, revealed, showPassword, revealPending, onEdit, onRemove, removePending }: {
+  s: SubItem;
+  revealed: Record<string, string>;
+  showPassword: (id: string) => void;
+  revealPending: boolean;
+  onEdit: (e: { id: string; name: string; purpose: string; email: string; password: string; url: string; amount: string; currency: "USD" | "EUR" | "CZK" | "GBP"; period: "monthly" | "yearly" | "one_off"; paidOn: string; notes: string }) => void;
+  onRemove: (id: string, name: string) => void;
+  removePending: boolean;
+}) {
+  return (
+    <tr className="hover:bg-white/5">
+      <td className="py-2.5 pr-3">
+        <span className="font-medium text-ink">{s.name}</span>
+        {s.status === "canceled" && <Badge tone="slate">zrušené</Badge>}
+        {s.url && <a className="ml-1.5 text-xs text-accent hover:underline" href={s.url.startsWith("http") ? s.url : `https://${s.url}`} target="_blank" rel="noreferrer">↗</a>}
+        {s.notes && <div className="text-xs text-faint">{s.notes}</div>}
+      </td>
+      <td className="py-2.5 pr-3 text-muted">{s.purpose ?? "—"}</td>
+      <td className="py-2.5 pr-3 text-muted">{s.email ?? "—"}</td>
+      <td className="py-2.5 pr-3">
+        {!s.hasPassword ? <span className="text-faint">—</span> : revealed[s.id] ? (
+          <span className="flex items-center gap-1.5">
+            <code className="rounded bg-white/5 px-1.5 py-0.5 text-xs text-ink">{revealed[s.id]}</code>
+            <button className="text-xs text-faint hover:text-muted" title="Zkopírovat" onClick={() => navigator.clipboard.writeText(revealed[s.id] ?? "")}>⧉</button>
+            <button className="text-xs text-faint hover:text-muted" onClick={() => showPassword(s.id)}>skrýt</button>
+          </span>
+        ) : (
+          <button className="text-xs text-accent hover:underline" disabled={revealPending} onClick={() => showPassword(s.id)}>••••• zobrazit</button>
+        )}
+      </td>
+      <td className="py-2.5 pr-3 text-right text-muted">{(Number(s.amountMinor) / 100).toLocaleString("cs-CZ")} {s.currency}{s.period === "one_off" ? ` · ${s.paidOn ? new Date(s.paidOn).toLocaleDateString("cs-CZ") : ""}` : s.period === "yearly" ? "/rok" : "/měs"}</td>
+      <td className="py-2.5 pr-3 text-right font-medium text-ink">{s.period === "one_off" ? money(Number(s.czkMinor)) : money(Number(s.monthlyCzkMinor))}</td>
+      <td className="py-2.5 text-right">
+        <button className="text-xs text-faint hover:text-accent" onClick={() => onEdit({
+          id: s.id, name: s.name, purpose: s.purpose ?? "", email: s.email ?? "", password: "",
+          url: s.url ?? "", amount: String(Number(s.amountMinor) / 100), currency: s.currency as never, period: s.period as never, paidOn: s.paidOn ?? new Date().toISOString().slice(0, 10), notes: s.notes ?? "",
+        })}>Upravit</button>
+        <button className="ml-2 text-xs text-red-300 hover:underline" disabled={removePending} onClick={() => onRemove(s.id, s.name)}>×</button>
+      </td>
+    </tr>
   );
 }
