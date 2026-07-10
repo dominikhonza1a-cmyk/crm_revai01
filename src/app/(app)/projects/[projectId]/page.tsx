@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { trpc } from "@/ui/trpc";
 import { Card, Badge, Tabs, Loading, Empty, btnPrimary, SectionTitle, money } from "@/ui/components/ui";
@@ -9,6 +9,7 @@ import { TimelineTab, DocumentsTab } from "@/ui/components/entity-tabs";
 import { NewTaskModal, TaskStatusSelect } from "@/ui/components/entity-forms";
 import { TagPicker } from "@/ui/components/tag-picker";
 import { CustomFieldsCard } from "@/ui/components/custom-fields-card";
+import { EditTaskModal } from "@/ui/components/edit-contact-task";
 
 const STATUS: Record<string, { label: string; tone: "slate" | "green" | "amber" }> = {
   draft: { label: "Draft", tone: "slate" }, active: { label: "Aktivní", tone: "green" },
@@ -20,12 +21,17 @@ const TABS = [{ key: "overview", label: "Přehled" }, { key: "tasks", label: "Ú
 export default function ProjectDetailPage() {
   const projectId = useParams().projectId as string;
   const [tab, setTab] = useState("overview");
+  const router = useRouter();
   const utils = trpc.useUtils();
   const project = trpc.projects.get.useQuery({ id: projectId });
   const phases = trpc.projects.phases.useQuery({ id: projectId });
 
   const invalidate = async () => Promise.all([utils.projects.get.invalidate({ id: projectId }), utils.projects.phases.invalidate({ id: projectId }), utils.projects.list.invalidate(), utils.activities.timeline.invalidate()]);
   const changeStatus = trpc.projects.changeStatus.useMutation({ onSuccess: invalidate });
+  const rename = trpc.projects.update.useMutation({ onSuccess: invalidate });
+  const removeProject = trpc.projects.remove.useMutation({
+    onSuccess: async () => { await utils.projects.list.invalidate(); router.push("/projects"); },
+  });
   const advancePhase = trpc.projects.advancePhase.useMutation({ onSuccess: invalidate });
 
   if (project.isLoading) return <Loading />;
@@ -39,6 +45,8 @@ export default function ProjectDetailPage() {
       <div className="flex flex-wrap items-center gap-3">
         <Link href="/projects" className="grid h-8 w-8 place-items-center rounded-lg text-faint hover:bg-white/5 hover:text-ink">←</Link>
         <h1 className="text-2xl font-semibold text-ink">{p.name}</h1>
+        <button className="text-xs text-faint hover:text-accent" title="Přejmenovat projekt"
+          onClick={() => { const n = prompt("Nový název projektu:", p.name); if (n?.trim() && n !== p.name) rename.mutate({ projectId, name: n.trim() }); }}>✎</button>
         {st && <Badge tone={st.tone}>{st.label}</Badge>}
         <span className="text-sm text-faint">{TYPE[p.projectType] ?? p.projectType} · {p.engagementType === "retainer" ? "Retainer" : "Jednorázový"}</span>
         <TagPicker entityType="project" entityId={projectId} />
@@ -53,6 +61,8 @@ export default function ProjectDetailPage() {
           <button className={btnPrimary} disabled={changeStatus.isPending}
             onClick={() => changeStatus.mutate({ projectId, toStatus: "active" })}>Obnovit</button>
         )}
+        <button className="text-xs text-red-300 hover:underline" disabled={removeProject.isPending}
+          onClick={() => { if (confirm(`Smazat projekt „${p.name}" včetně jeho úkolů?`)) removeProject.mutate({ projectId }); }}>Smazat</button>
       </div>
 
       {actionError && <div className="rounded-2xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-300">{actionError.message}</div>}
@@ -225,6 +235,7 @@ function GitRepoRow({ projectId, current }: { projectId: string; current?: strin
 function ProjectTasks({ projectId }: { projectId: string }) {
   const q = trpc.tasks.list.useQuery({ projectId, view: "all" });
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<null | { id: string; title: string; priority: string; dueAt: Date | string | null; assigneeId: string | null }>(null);
   if (q.isLoading || !q.data) return <Loading />;
   return (
     <div className="space-y-3">
@@ -235,9 +246,10 @@ function ProjectTasks({ projectId }: { projectId: string }) {
         <Card className="overflow-hidden p-0">
           <ul className="divide-y divide-line">
             {q.data.items.map((t) => (
-              <li key={t.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                <div className="min-w-0">
-                  <div className="truncate text-sm text-ink">{t.title}</div>
+              <li key={t.id} className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-white/5">
+                <div className="min-w-0 flex-1 cursor-pointer" title="Klik = upravit úkol"
+                  onClick={() => setEditing({ id: t.id, title: t.title, priority: t.priority, dueAt: t.dueAt, assigneeId: t.assigneeId ?? null })}>
+                  <div className="truncate text-sm text-ink">{t.title} <span className="text-xs text-faint">✎</span></div>
                   <div className="mt-0.5 text-xs text-faint">
                     <span className="uppercase">{t.priority}</span>
                     {t.dueAt && <span> · do {new Date(t.dueAt).toLocaleDateString("cs-CZ")}</span>}
@@ -250,6 +262,7 @@ function ProjectTasks({ projectId }: { projectId: string }) {
         </Card>
       )}
       {open && <NewTaskModal projectId={projectId} onClose={() => setOpen(false)} />}
+      {editing && <EditTaskModal task={editing} onClose={() => setEditing(null)} />}
     </div>
   );
 }

@@ -58,12 +58,14 @@ export function NewStandaloneTaskModal({ onClose }: { onClose: () => void }) {
   const utils = trpc.useUtils();
   const orgs = trpc.organizations.list.useQuery({});
   const projects = trpc.projects.list.useQuery(undefined);
+  const users = trpc.security.listUsersBasic.useQuery();
   const [type, setType] = useState<"internal" | "delivery" | "support" | "sales_followup">("internal");
   const [title, setTitle] = useState("");
   const [organizationId, setOrganizationId] = useState("");
   const [projectId, setProjectId] = useState("");
   const [priority, setPriority] = useState("p3");
   const [dueAt, setDueAt] = useState("");
+  const [assigneeId, setAssigneeId] = useState("");
 
   const create = trpc.tasks.create.useMutation({
     onSuccess: async () => { await utils.tasks.list.invalidate(); onClose(); },
@@ -77,6 +79,7 @@ export function NewStandaloneTaskModal({ onClose }: { onClose: () => void }) {
           type, title, priority: priority as never,
           organizationId: organizationId || undefined,
           projectId: projectId || undefined,
+          assigneeId: assigneeId || undefined,
           dueAt: dueAt ? new Date(`${dueAt}T17:00:00`).toISOString() : undefined,
           channel: type === "support" ? "portal" : undefined,
         });
@@ -108,6 +111,11 @@ export function NewStandaloneTaskModal({ onClose }: { onClose: () => void }) {
             </select></div>
           <div><label className={fieldLabel}>Termín</label>
             <input className={fieldInput} type="date" value={dueAt} onChange={(e) => setDueAt(e.target.value)} /></div>
+          <div><label className={fieldLabel}>Řešitel</label>
+            <select className={fieldInput} value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}>
+              <option value="">— nikdo —</option>
+              {(users.data ?? []).map((u) => <option key={u.id} value={u.id}>{u.fullName}</option>)}
+            </select></div>
         </div>
         {type === "support" && <p className="text-xs text-faint">Ticket automaticky spustí SLA měřidla dle tieru klienta.</p>}
         {create.error && <p className="text-sm text-red-300">{formatError(create.error.message)}</p>}

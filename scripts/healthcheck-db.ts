@@ -36,9 +36,13 @@ const out = (s: "PASS" | "WARN" | "FAIL", name: string, detail = "") => console.
   const tags = await q("tag");
   out(tags > 0 ? "PASS" : "WARN", "seed štítky", `${tags}`);
 
-  for (const t of ["organization", "contact", "deal", "project", "task", "timeline_event", "sla_tracker", "notification_outbox", "idea"]) {
+  // od importu 2026-07-09 DB drží ostrá data — jen informativní počty
+  for (const t of ["organization", "contact", "deal", "project", "task", "timeline_event", "idea"]) {
+    out("PASS", `data ${t}`, `${await q(t)} řádků`);
+  }
+  for (const t of ["sla_tracker", "notification_outbox"]) {
     const c = await q(t);
-    out(c === 0 ? "PASS" : "WARN", `čistota ${t}`, `${c} řádků (po úklidu očekáváno 0)`);
+    out(c < 100 ? "PASS" : "WARN", `fronta ${t}`, `${c} řádků`);
   }
 
   const google = await conn.select({ email: integrationConnections.externalEmail, status: integrationConnections.status, lastSyncedAt: integrationConnections.lastSyncedAt })

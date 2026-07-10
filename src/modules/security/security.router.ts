@@ -7,6 +7,12 @@ const roleEnum = z.enum(["admin", "sales", "pm", "dev", "support"]);
 
 /** tRPC router security — správa uživatelů a API klíčů (jen admin / settings:manage). */
 export const securityRouter = router({
+  /** Jména kolegů pro výběr řešitele úkolu — dostupné všem přihlášeným. */
+  listUsersBasic: protectedProcedure.query(async () => {
+    const users = await securityService.listUsers(undefined as never);
+    return users.filter((u) => u.status !== "deactivated").map((u) => ({ id: u.id, fullName: u.fullName }));
+  }),
+
   listUsers: protectedProcedure.use(requirePermission("settings", "manage"))
     .query(({ ctx }) => securityService.listUsers(ctx)),
 

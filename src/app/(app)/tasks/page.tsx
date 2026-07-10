@@ -5,6 +5,7 @@ import { trpc } from "@/ui/trpc";
 import { Card, Badge, Loading, Empty } from "@/ui/components/ui";
 import { TaskStatusSelect } from "@/ui/components/entity-forms";
 import { NewStandaloneTaskModal } from "@/ui/components/new-entity-modals";
+import { EditTaskModal } from "@/ui/components/edit-contact-task";
 import { btnPrimary } from "@/ui/components/ui";
 
 const TABS = [
@@ -17,11 +18,13 @@ type View = (typeof TABS)[number]["key"];
 export default function TasksPage() {
   const [view, setView] = useState<View>("my_work");
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<null | { id: string; title: string; priority: string; dueAt: Date | string | null; assigneeId: string | null; description?: string | null }>(null);
   const { data, isLoading, error } = trpc.tasks.list.useQuery({ view });
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       {creating && <NewStandaloneTaskModal onClose={() => setCreating(false)} />}
+      {editing && <EditTaskModal task={editing} onClose={() => setEditing(null)} />}
       <div className="flex items-center justify-between">
       <div className="inline-flex rounded-xl border border-line bg-surface p-1">
         {TABS.map((t) => (
@@ -42,8 +45,9 @@ export default function TasksPage() {
             <ul className="divide-y divide-line">
               {data.items.map((t) => (
                 <li key={t.id} className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-white/5">
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-medium text-ink">{t.title}</div>
+                  <div className="min-w-0 flex-1 cursor-pointer" title="Klik = upravit úkol"
+                    onClick={() => setEditing({ id: t.id, title: t.title, priority: t.priority, dueAt: t.dueAt, assigneeId: t.assigneeId ?? null, description: (t as { description?: string | null }).description })}>
+                    <div className="truncate text-sm font-medium text-ink">{t.title} <span className="text-xs text-faint">✎</span></div>
                     <div className="mt-0.5 flex items-center gap-2 text-xs text-faint">
                       {t.type === "support" && <Badge tone="blue">ticket</Badge>}
                       <span className="uppercase">{t.priority}</span>

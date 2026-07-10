@@ -10,6 +10,7 @@ import { NewContactModal } from "@/ui/components/entity-forms";
 import { TagPicker } from "@/ui/components/tag-picker";
 import { CustomFieldsCard } from "@/ui/components/custom-fields-card";
 import { EditClientModal } from "@/ui/components/edit-modals";
+import { EditContactModal } from "@/ui/components/edit-contact-task";
 
 const LIFECYCLE: Record<string, { label: string; tone: "slate" | "green" | "amber" | "blue" }> = {
   prospect: { label: "Prospekt", tone: "blue" }, active_client: { label: "Klient", tone: "green" },
@@ -82,6 +83,7 @@ function ProjectsTab({ orgId }: { orgId: string }) {
 function ContactsTab({ orgId }: { orgId: string }) {
   const q = trpc.contacts.list.useQuery({ organizationId: orgId });
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<null | { id: string; firstName: string; lastName: string; email: string | null; phone: string | null; jobTitle: string | null }>(null);
   if (q.isLoading || !q.data) return <Loading />;
   return (
     <div className="space-y-3">
@@ -89,11 +91,17 @@ function ContactsTab({ orgId }: { orgId: string }) {
         <button className="rounded-xl border border-line px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent/40 hover:text-accent" onClick={() => setOpen(true)}>+ Kontakt</button>
       </div>
       {q.data.items.length === 0 ? <Empty>Žádné kontakty</Empty> : (
-        <Card className="p-0 overflow-hidden"><ul className="divide-y divide-line">{q.data.items.map((c, i) => (
-          <li key={i} className="flex items-center justify-between px-4 py-3"><span className="text-ink">{c.firstName} {c.lastName}</span><span className="text-sm text-muted">{c.jobTitle ?? ""} {c.email ? `· ${c.email}` : ""}</span></li>
+        <Card className="p-0 overflow-hidden"><ul className="divide-y divide-line">{q.data.items.map((c) => (
+          <li key={c.id ?? c.email ?? Math.random()} className="flex cursor-pointer items-center justify-between px-4 py-3 transition-colors hover:bg-white/5"
+            title="Klik = upravit kontakt"
+            onClick={() => setEditing({ id: c.id ?? "", firstName: c.firstName ?? "", lastName: c.lastName ?? "", email: c.email ?? null, phone: c.phone ?? null, jobTitle: c.jobTitle ?? null })}>
+            <span className="text-ink">{`${c.firstName} ${c.lastName}`.trim()}</span>
+            <span className="text-sm text-muted">{c.jobTitle ?? ""} {c.email ? `· ${c.email}` : ""} <span className="ml-1 text-xs text-faint">✎</span></span>
+          </li>
         ))}</ul></Card>
       )}
       {open && <NewContactModal organizationId={orgId} onClose={() => setOpen(false)} />}
+      {editing && <EditContactModal contact={editing} onClose={() => setEditing(null)} />}
     </div>
   );
 }

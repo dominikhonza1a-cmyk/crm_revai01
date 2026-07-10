@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { trpc } from "@/ui/trpc";
 import { Modal, fieldInput, fieldLabel, btnPrimary, btnGhost, formatError } from "./ui";
 
@@ -11,6 +12,7 @@ export function EditClientModal({ org, onClose }: {
   onClose: () => void;
 }) {
   const utils = trpc.useUtils();
+  const router = useRouter();
   const [name, setName] = useState(org.name);
   const [website, setWebsite] = useState(org.website ?? "");
   const [industry, setIndustry] = useState(org.industry ?? "");
@@ -19,6 +21,9 @@ export function EditClientModal({ org, onClose }: {
 
   const update = trpc.organizations.update.useMutation({
     onSuccess: async () => { await Promise.all([utils.organizations.get.invalidate({ id: org.id }), utils.organizations.list.invalidate()]); onClose(); },
+  });
+  const removeOrg = trpc.organizations.remove.useMutation({
+    onSuccess: async () => { await utils.organizations.list.invalidate(); onClose(); router.push("/clients"); },
   });
 
   return (
@@ -48,10 +53,16 @@ export function EditClientModal({ org, onClose }: {
               <option value="past_client">Bývalý klient</option><option value="partner">Partner</option>
             </select></div>
         </div>
-        {update.error && <p className="text-sm text-red-300">{formatError(update.error.message)}</p>}
-        <div className="flex justify-end gap-2">
-          <button type="button" className={btnGhost} onClick={onClose}>Zrušit</button>
-          <button type="submit" className={btnPrimary} disabled={update.isPending}>{update.isPending ? "Ukládám…" : "Uložit"}</button>
+        {(update.error || removeOrg.error) && <p className="text-sm text-red-300">{formatError((update.error ?? removeOrg.error)?.message)}</p>}
+        <div className="flex items-center justify-between">
+          <button type="button" className="text-xs text-red-300 hover:underline" disabled={removeOrg.isPending}
+            onClick={() => { if (confirm(`Smazat klienta „${org.name}" včetně jeho kontaktů, dealů, projektů a úkolů?`)) removeOrg.mutate({ id: org.id }); }}>
+            Smazat klienta
+          </button>
+          <div className="flex gap-2">
+            <button type="button" className={btnGhost} onClick={onClose}>Zrušit</button>
+            <button type="submit" className={btnPrimary} disabled={update.isPending}>{update.isPending ? "Ukládám…" : "Uložit"}</button>
+          </div>
         </div>
       </form>
     </Modal>
@@ -68,6 +79,9 @@ export function EditDealModal({ dealId, onClose }: { dealId: string; onClose: ()
 
   const update = trpc.deals.update.useMutation({
     onSuccess: async () => { await Promise.all([utils.deals.list.invalidate(), utils.deals.get.invalidate({ id: dealId }), utils.reporting.dashboard.invalidate()]); onClose(); },
+  });
+  const removeDeal = trpc.deals.remove.useMutation({
+    onSuccess: async () => { await Promise.all([utils.deals.list.invalidate(), utils.reporting.dashboard.invalidate()]); onClose(); },
   });
 
   if (deal.isLoading || !deal.data) return <Modal title="Upravit deal" onClose={onClose}><p className="text-sm text-faint">Načítám…</p></Modal>;
@@ -96,10 +110,16 @@ export function EditDealModal({ dealId, onClose }: { dealId: string; onClose: ()
           Fázi měníš přetažením na kanbanu. Poznámky a historie jsou na kartě klienta —{" "}
           <Link className="text-accent hover:underline" href={`/clients/${d.organizationId}`} onClick={onClose}>otevřít klienta →</Link>
         </p>
-        {update.error && <p className="text-sm text-red-300">{formatError(update.error.message)}</p>}
-        <div className="flex justify-end gap-2">
-          <button type="button" className={btnGhost} onClick={onClose}>Zrušit</button>
-          <button type="submit" className={btnPrimary} disabled={update.isPending}>{update.isPending ? "Ukládám…" : "Uložit"}</button>
+        {(update.error || removeDeal.error) && <p className="text-sm text-red-300">{formatError((update.error ?? removeDeal.error)?.message)}</p>}
+        <div className="flex items-center justify-between">
+          <button type="button" className="text-xs text-red-300 hover:underline" disabled={removeDeal.isPending}
+            onClick={() => { if (confirm(`Smazat deal „${titleVal}"?`)) removeDeal.mutate({ id: dealId }); }}>
+            Smazat deal
+          </button>
+          <div className="flex gap-2">
+            <button type="button" className={btnGhost} onClick={onClose}>Zrušit</button>
+            <button type="submit" className={btnPrimary} disabled={update.isPending}>{update.isPending ? "Ukládám…" : "Uložit"}</button>
+          </div>
         </div>
       </form>
     </Modal>

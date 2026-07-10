@@ -36,7 +36,9 @@ export function TimelineTab({ entityType, entityId }: { entityType: Host; entity
 
 /** Dokumenty entity (reference/nativní/secret) + přidání. */
 export function DocumentsTab({ entityType, entityId }: { entityType: Host; entityId: string }) {
+  const utils = trpc.useUtils();
   const q = trpc.documents.list.useQuery({ entityType, entityId });
+  const removeDoc = trpc.documents.remove.useMutation({ onSuccess: () => utils.documents.list.invalidate({ entityType, entityId }) });
   const [open, setOpen] = useState(false);
   if (q.isLoading || !q.data) return <Loading />;
   return (
@@ -50,9 +52,13 @@ export function DocumentsTab({ entityType, entityId }: { entityType: Host; entit
                 {d.kind === "external_ref" && d.externalUrl
                   ? <a href={d.externalUrl} target="_blank" rel="noreferrer" className="text-ink hover:text-accent hover:underline">{d.title} ↗</a>
                   : <span className="text-ink">{d.title}</span>}
-                <Badge tone={d.kind === "secret_ref" ? "red" : d.kind === "native_file" ? "blue" : "slate"}>
-                  {d.kind === "external_ref" ? "odkaz" : d.kind === "secret_ref" ? "secret" : "soubor"}
-                </Badge>
+                <span className="flex items-center gap-2">
+                  <Badge tone={d.kind === "secret_ref" ? "red" : d.kind === "native_file" ? "blue" : "slate"}>
+                    {d.kind === "external_ref" ? "odkaz" : d.kind === "secret_ref" ? "secret" : "soubor"}
+                  </Badge>
+                  <button className="text-xs text-red-300 hover:underline" title="Smazat dokument" disabled={removeDoc.isPending}
+                    onClick={() => { if (confirm(`Smazat dokument „${d.title}"?`)) removeDoc.mutate({ id: d.id }); }}>×</button>
+                </span>
               </li>
             ))}
           </ul>

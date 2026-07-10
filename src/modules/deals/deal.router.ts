@@ -2,6 +2,11 @@ import { z } from "zod";
 import { router, protectedProcedure, requirePermission } from "@/api/trpc";
 import { dealCreateSchema, dealUpdateSchema, dealMoveStageSchema } from "./deal.validation";
 import { dealService } from "./deal.service";
+import { db } from "@/shared/db";
+import { currentWorkspaceId } from "@/shared/tenant-context";
+import { and, eq } from "drizzle-orm";
+import { deals } from "./deal.entity";
+import { audit } from "@/shared/audit/audit.service";
 import { dealRepository } from "./deal.repository";
 
 const idInput = z.object({ id: z.string().uuid() });
@@ -27,6 +32,14 @@ export const dealsRouter = router({
   update: protectedProcedure.use(requirePermission("deals", "write"))
     .input(idInput.merge(dealUpdateSchema))
     .mutation(({ ctx, input }) => { const { id, ...rest } = input; return dealService.update(ctx, id, rest); }),
+
+  remove: protectedProcedure.use(requirePermission("deals", "write"))
+    .input(idInput)
+    .mutation(async ({ ctx, input }) => {
+      const ws = currentWorkspaceId();
+      await db().update(deals).set({ deletedAt: new Date() }).where(and(eq(deals.id, input.id), eq(deals.workspaceId, ws)));
+      await audit.audited(ctx, "record_deleted", { type: "deal", id: input.id });
+    }),
 
   moveStage: protectedProcedure.use(requirePermission("deals", "write"))
     .input(dealMoveStageSchema)
