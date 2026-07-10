@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { and, eq, isNull, desc } from "drizzle-orm";
+import { and, eq, isNull, desc, getTableColumns } from "drizzle-orm";
 import { db } from "@/shared/db";
 import { currentWorkspaceId } from "@/shared/tenant-context";
 import { clampLimit, type Page } from "@/shared/pagination";
 import { deals, pipelineStages, type DealRow, type PipelineStageRow } from "./deal.entity";
+import { organizations } from "@/modules/organizations/organization.entity";
 import type { DealCreateInput, DealUpdateInput, DealListFilter } from "./deal.types";
 
 /** Pole, která smí nastavit přechod stage (probability + won/lost stopy). */
@@ -18,13 +19,14 @@ export const dealRepository = {
     return row ?? null;
   },
 
-  async list(filter: DealListFilter, limit?: number): Promise<Page<DealRow>> {
+  async list(filter: DealListFilter, limit?: number): Promise<Page<DealRow & { organizationName: string | null }>> {
     const ws = currentWorkspaceId();
     const conds = [eq(deals.workspaceId, ws), isNull(deals.deletedAt)];
     if (filter.stageId) conds.push(eq(deals.pipelineStageId, filter.stageId));
     if (filter.ownerId) conds.push(eq(deals.ownerId, filter.ownerId));
     if (filter.organizationId) conds.push(eq(deals.organizationId, filter.organizationId));
-    const items = await db().select().from(deals)
+    const items = await db().select({ ...getTableColumns(deals), organizationName: organizations.name }).from(deals)
+      .leftJoin(organizations, eq(deals.organizationId, organizations.id))
       .where(and(...conds)).orderBy(desc(deals.createdAt)).limit(clampLimit(limit));
     return { items, nextCursor: null };
   },

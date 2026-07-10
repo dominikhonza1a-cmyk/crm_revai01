@@ -60,7 +60,7 @@ export default function DealsPage() {
     <div className="space-y-4">
       {banner === "won" && (
         <div className="flex items-center justify-between rounded-2xl border border-accent/40 bg-accent-soft px-4 py-3 text-sm text-accent">
-          <span>Deal vyhrán 🎉 — projekt vznikl v draftu ze šablony.</span>
+          <span>Deal vyhrán — projekt vznikl v draftu ze šablony.</span>
           <Link href="/projects" className="font-semibold hover:underline">Otevřít Projekty →</Link>
         </div>
       )}

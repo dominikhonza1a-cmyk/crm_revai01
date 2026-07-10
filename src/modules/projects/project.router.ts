@@ -63,6 +63,7 @@ export const projectsRouter = router({
     .input(z.object({
       projectId: z.string().uuid(),
       name: z.string().trim().min(1).max(200).optional(),
+      description: z.string().max(20000).nullable().optional(),
       projectType: z.enum(["chatbot_voicebot", "process_automation", "custom_ai"]).optional(),
     }))
     .mutation(async ({ input }) => {

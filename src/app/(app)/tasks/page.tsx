@@ -39,7 +39,7 @@ export default function TasksPage() {
 
       {error ? <div className="rounded-2xl border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-300">Chyba: {error.message}</div>
         : isLoading || !data ? <Loading />
-        : data.items.length === 0 ? <Empty>Žádné úkoly v tomto pohledu 🎉</Empty>
+        : data.items.length === 0 ? <Empty>Doposud nepřiřazen žádný úkol</Empty>
         : (
           <Card className="overflow-hidden p-0">
             <ul className="divide-y divide-line">

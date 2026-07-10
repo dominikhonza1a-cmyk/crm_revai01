@@ -10,6 +10,8 @@ import { NewTaskModal, TaskStatusSelect } from "@/ui/components/entity-forms";
 import { TagPicker } from "@/ui/components/tag-picker";
 import { CustomFieldsCard } from "@/ui/components/custom-fields-card";
 import { EditTaskModal } from "@/ui/components/edit-contact-task";
+import { useEffect, useRef } from "react";
+import { MarkdownLite } from "@/ui/components/markdown-lite";
 
 const STATUS: Record<string, { label: string; tone: "slate" | "green" | "amber" }> = {
   draft: { label: "Draft", tone: "slate" }, active: { label: "Aktivní", tone: "green" },
@@ -102,18 +104,62 @@ export default function ProjectDetailPage() {
             <div className="flex justify-between"><span className="text-muted">Kód</span><span className="text-ink">{p.code ?? "—"}</span></div>
             <div className="flex justify-between"><span className="text-muted">Start</span><span className="text-ink">{p.startDate ?? "—"}</span></div>
             <div className="flex justify-between"><span className="text-muted">Typ zakázky</span><span className="text-ink">{p.engagementType === "retainer" ? "Retainer" : "Jednorázový"}</span></div>
+            <div className="flex justify-between"><span className="text-muted">Poslední změna</span><span className="text-ink">{new Date(p.updatedAt).toLocaleString("cs-CZ")}</span></div>
             <GitRepoRow projectId={projectId} current={(p.customFields as Record<string, unknown>)?.git_repo as string | undefined} />
           </div></Card>
           <FinanceCard projectId={projectId} isRetainer={p.engagementType === "retainer"}
             priceMinor={p.priceMinor} monthlyMinor={p.monthlyAmountMinor} retainerActive={p.retainerActive}
             payments={(p.payments ?? []) as { amountMinor: number; date: string; note?: string }[]} />
           <CustomFieldsCard entityType="project" entityId={projectId} values={(p.customFields ?? {}) as Record<string, unknown>} />
+          <div className="sm:col-span-2">
+            <DescriptionCard projectId={projectId} initial={p.description ?? ""} />
+          </div>
         </div>
       )}
       {tab === "tasks" && <ProjectTasks projectId={projectId} />}
       {tab === "timeline" && <TimelineTab entityType="project" entityId={projectId} />}
       {tab === "documents" && <DocumentsTab entityType="project" entityId={projectId} />}
     </div>
+  );
+}
+
+/** Popis projektu — volné psaní s autosave (jako Nápady), čtení s markdown formátováním. */
+function DescriptionCard({ projectId, initial }: { projectId: string; initial: string }) {
+  const [text, setText] = useState<string | null>(null);
+  const [editing, setEditing] = useState(!initial.trim());
+  const [saved, setSaved] = useState<"saved" | "saving" | "dirty">("saved");
+  const update = trpc.projects.update.useMutation({ onSuccess: () => setSaved("saved") });
+  const updateRef = useRef(update.mutate);
+  updateRef.current = update.mutate;
+  const value = text ?? initial;
+
+  useEffect(() => {
+    if (text === null) return;
+    setSaved("dirty");
+    const t = setTimeout(() => { setSaved("saving"); updateRef.current({ projectId, description: text || null }); }, 800);
+    return () => clearTimeout(t);
+  }, [text, projectId]);
+
+  return (
+    <Card>
+      <SectionTitle right={
+        <span className="flex items-center gap-3">
+          <span className={`text-xs ${saved === "saved" ? "text-accent" : "text-faint"}`}>{saved === "saved" ? "Uloženo ✓" : saved === "saving" ? "Ukládám…" : "Píšeš…"}</span>
+          <button className="rounded-xl border border-line px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent/40 hover:text-accent"
+            onClick={() => setEditing((e) => !e)}>{editing ? "✓ Hotovo" : "✎ Upravit"}</button>
+        </span>
+      }>Popis a poznámky</SectionTitle>
+      {editing ? (
+        <textarea
+          className="min-h-40 w-full resize-y rounded-2xl border border-line bg-surface-2 p-4 text-sm leading-relaxed text-ink outline-none placeholder:text-faint focus:border-accent/40"
+          placeholder="Cokoli k projektu — zadání, dohody, stav… Ukládá se samo. Umí **tučně**, # nadpisy, - odrážky, odkazy."
+          value={value} onChange={(e) => setText(e.target.value)} />
+      ) : (
+        <div className="cursor-text" onDoubleClick={() => setEditing(true)} title="Dvojklik = upravit">
+          {value.trim() ? <MarkdownLite text={value} /> : <p className="text-sm text-faint">Zatím bez popisu.</p>}
+        </div>
+      )}
+    </Card>
   );
 }
 

@@ -46,12 +46,12 @@ export default function SubscriptionsPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted">Vše, co platíme — předplatná i jednorázové výdaje. CZK přepočet denním kurzem ČNB; roční platby = 1/12 měsíčně, jednorázové se počítají do cashflow měsíce, kdy byly zaplacené.</p>
-        <button className={btnPrimary} onClick={() => setEdit({ ...EMPTY })}>+ Nový náklad</button>
+        <p className="text-sm text-muted">Pravidelná předplatná a jednorázové výdaje.</p>
+        <button className={btnPrimary + " shrink-0 whitespace-nowrap"} onClick={() => setEdit({ ...EMPTY })}>+ Nový náklad</button>
       </div>
 
       {!items.length ? (
-        <Empty doodle="/doodles/card.svg">Zatím žádná předplatná — přidej první (Claude, GPT, hosting…)</Empty>
+        <Empty doodle="/doodles/card.svg">Zatím žádné náklady</Empty>
       ) : (
         <Card>
           <SectionTitle right={

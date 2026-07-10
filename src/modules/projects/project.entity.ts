@@ -19,6 +19,7 @@ export const projects = pgTable("project", {
   priceMinor: bigint("price_minor", { mode: "bigint" }),                    // jednorázová cena (CZK haléře)
   payments: jsonb("payments").notNull().default([]),                        // [{amountMinor, date, note}]
   retainerActive: boolean("retainer_active").notNull().default(false),      // retainer běží → počítá se do dashboardu
+  description: text("description"),                                         // volný popis (autosave)
   status: text("status").notNull().default("draft"),   // draft | active | on_hold | closed
   currentPhaseId: uuid("current_phase_id"),
   ownerId: uuid("owner_id"),

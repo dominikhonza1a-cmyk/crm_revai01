@@ -12,6 +12,7 @@ export interface KanbanDeal {
   amountMinor: bigint | null;
   currency: string | null;
   probability: number;
+  organizationName?: string | null;
 }
 
 export function KanbanBoard({ stages, deals, onMove, onCardClick, busy }: {
@@ -66,6 +67,7 @@ export function KanbanBoard({ stages, deals, onMove, onCardClick, busy }: {
                     title="Klik = upravit deal"
                     className="cursor-grab rounded-xl border border-line bg-surface p-3 transition-colors hover:border-accent/40 active:cursor-grabbing">
                     <div className="text-sm font-medium text-ink">{d.title}</div>
+                    {d.organizationName && <div className="mt-0.5 truncate text-xs text-accent/80">{d.organizationName}</div>}
                     <div className="mt-1.5 flex items-center justify-between text-xs text-faint">
                       <span>{d.amountMinor != null ? money(d.amountMinor, d.currency ?? "Kč") : "—"}</span>
                       <span>{d.probability}%</span>

@@ -24,3 +24,5 @@ body { background-color: var(--color-bg); color: var(--color-ink); }
 * { scrollbar-width: thin; scrollbar-color: #2a3446 transparent; }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-thumb { background: #2a3446; border-radius: 8px; }
+
+:root { color-scheme: dark; }

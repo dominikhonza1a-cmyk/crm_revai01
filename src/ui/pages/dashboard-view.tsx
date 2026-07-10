@@ -83,7 +83,7 @@ function TodayCard() {
             : !agenda.data.connected ? (
               <p className="text-sm text-faint">Google kalendář nepřipojen — <Link href="/settings" className="text-accent hover:underline">připojit v Nastavení</Link></p>
             ) : agenda.data.events.length === 0 ? (
-              <p className="text-sm text-faint">Dnes žádné schůzky 🎉</p>
+              <p className="text-sm text-faint">Dnes žádné schůzky</p>
             ) : (
               <ul className="space-y-1.5">
                 {agenda.data.events.map((e, i) => (
@@ -99,7 +99,7 @@ function TodayCard() {
         <div>
           <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-faint">✅ Úkoly do dneška</h3>
           {!tasks.data ? <p className="text-sm text-faint">Načítám…</p>
-            : tasks.data.length === 0 ? <p className="text-sm text-faint">Nic nehoří 🎉</p>
+            : tasks.data.length === 0 ? <p className="text-sm text-faint">Žádné úkoly do dneška</p>
             : (
               <ul className="space-y-1.5">
                 {tasks.data.map((t) => {
@@ -207,7 +207,7 @@ export function DashboardView({ data }: { data: DashboardData }) {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card doodle="/doodles/headset.png">
           <SectionTitle>Otevřené tickety</SectionTitle>
-          {data.tickets.length === 0 ? <Empty doodle={null}>Žádné otevřené tickety 🎉</Empty> : (
+          {data.tickets.length === 0 ? <Empty doodle={null}>Žádné otevřené tickety</Empty> : (
             <div className="space-y-2">
               {data.tickets.map((t) => (
                 <div key={t.priority} className="flex items-center justify-between rounded-xl px-3 py-2 hover:bg-white/5">

@@ -32,8 +32,8 @@ export default function ProjectsPage() {
       {data.items.map((p) => {
         const st = STATUS[p.status];
         return (
-          <Link key={p.id} href={`/projects/${p.id}`}>
-            <Card className="cursor-pointer transition-colors hover:border-accent/40">
+          <Link key={p.id} href={`/projects/${p.id}`} className="block h-full">
+            <Card className="h-full cursor-pointer transition-colors hover:border-accent/40">
               <div className="flex items-start justify-between gap-2">
                 <span className="font-medium text-ink">{p.name}</span>
                 {st && <Badge tone={st.tone}>{st.label}</Badge>}

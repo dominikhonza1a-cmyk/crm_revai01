@@ -76,7 +76,7 @@ function ProjectsTab({ orgId }: { orgId: string }) {
   if (q.isLoading || !q.data) return <Loading />;
   if (!q.data.items.length) return <Empty>Žádné projekty</Empty>;
   return <div className="grid gap-3 sm:grid-cols-2">{q.data.items.map((p) => (
-    <Link key={p.id} href={`/projects/${p.id}`}><Card className="hover:border-accent/40"><div className="flex items-center justify-between"><span className="font-medium text-ink">{p.name}</span><Badge tone={p.status === "active" ? "green" : "slate"}>{p.status}</Badge></div></Card></Link>
+    <Link key={p.id} href={`/projects/${p.id}`} className="block h-full"><Card className="h-full hover:border-accent/40"><div className="flex items-center justify-between"><span className="font-medium text-ink">{p.name}</span><Badge tone={p.status === "active" ? "green" : "slate"}>{p.status}</Badge></div></Card></Link>
   ))}</div>;
 }
 

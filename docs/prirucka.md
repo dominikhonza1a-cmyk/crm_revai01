@@ -38,12 +38,12 @@ KLIENT (firma) drží všechno pohromadě: kontakty, dealy, projekty, dokumenty,
 
 ## 3. Obchod — pipeline
 
-Šest fází: **Lead → Qualified → Discovery → Proposal → Negotiation → Won/Lost.**
+Šest fází: **Nový lead → Kvalifikace → Analýza potřeb → Nabídka → Vyjednávání → Vyhráno/Prohráno.**
 Dealy taháš myší (kanban) nebo přepínáš na kartě.
 
 **Co se stane samo:**
 - **Won** → automaticky vznikne **projekt** ze šablony dle typu (chatbot/automatizace/custom AI) ve stavu *draft* — včetně fází a připravených úkolů. Projektový manažer ho zkontroluje a tlačítkem **„Potvrdit a aktivovat"** spustí.
-- **Deal bez pohybu** → ranní upozornění „stale deal". Limity dle fáze: Lead a Qualified **14 dní**, Discovery **21 dní**, Proposal a Negotiation **10 dní**.
+- **Deal bez pohybu** → ranní upozornění „stale deal". Limity dle fáze: Nový lead a Kvalifikace **14 dní**, Analýza potřeb **21 dní**, Nabídka a Vyjednávání **10 dní**.
 - Každý posun dealu se zapíše do timeline klienta.
 
 ## 4. Projekty — dodávka

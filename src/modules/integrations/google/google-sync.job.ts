@@ -98,7 +98,7 @@ async function syncGmail(ctx: TenantContext, token: string, ownEmail: string, ma
         entityType: "organization", entityId: orgId, organizationId: orgId,
         eventType: outgoing ? "email_out" : "email_in",
         title: `📧 ${h("Subject") ?? "(bez předmětu)"}`,
-        payload: { from: h("From"), to: h("To"), date: h("Date"), via: ownEmail },
+        payload: { from: h("From"), to: h("To"), date: h("Date"), via: ownEmail, gmailId: id, snippet: String(msg.snippet ?? "").slice(0, 300) },
         sourceType: "integration_event", sourceId: uuidFrom(`gmail:${id}:${orgId}`),
       });
       written++;

@@ -57,15 +57,16 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
 export function NewStandaloneTaskModal({ onClose }: { onClose: () => void }) {
   const utils = trpc.useUtils();
   const orgs = trpc.organizations.list.useQuery({});
-  const projects = trpc.projects.list.useQuery(undefined);
   const users = trpc.security.listUsersBasic.useQuery();
+  const me = trpc.me.useQuery();
   const [type, setType] = useState<"internal" | "delivery" | "support" | "sales_followup">("internal");
   const [title, setTitle] = useState("");
   const [organizationId, setOrganizationId] = useState("");
-  const [projectId, setProjectId] = useState("");
+
   const [priority, setPriority] = useState("p3");
   const [dueAt, setDueAt] = useState("");
-  const [assigneeId, setAssigneeId] = useState("");
+  const [assigneeId, setAssigneeId] = useState<string | null>(null);
+  const effectiveAssignee = assigneeId ?? me.data?.userId ?? "";
 
   const create = trpc.tasks.create.useMutation({
     onSuccess: async () => { await utils.tasks.list.invalidate(); onClose(); },
@@ -78,8 +79,7 @@ export function NewStandaloneTaskModal({ onClose }: { onClose: () => void }) {
         create.mutate({
           type, title, priority: priority as never,
           organizationId: organizationId || undefined,
-          projectId: projectId || undefined,
-          assigneeId: assigneeId || undefined,
+          assigneeId: effectiveAssignee || undefined,
           dueAt: dueAt ? new Date(`${dueAt}T17:00:00`).toISOString() : undefined,
           channel: type === "support" ? "portal" : undefined,
         });
@@ -104,15 +104,10 @@ export function NewStandaloneTaskModal({ onClose }: { onClose: () => void }) {
               <option value="">—</option>
               {(orgs.data?.items ?? []).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
             </select></div>
-          <div><label className={fieldLabel}>Projekt</label>
-            <select className={fieldInput} value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-              <option value="">—</option>
-              {(projects.data?.items ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select></div>
           <div><label className={fieldLabel}>Termín</label>
             <input className={fieldInput} type="date" value={dueAt} onChange={(e) => setDueAt(e.target.value)} /></div>
           <div><label className={fieldLabel}>Řešitel</label>
-            <select className={fieldInput} value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}>
+            <select className={fieldInput} value={effectiveAssignee} onChange={(e) => setAssigneeId(e.target.value)}>
               <option value="">— nikdo —</option>
               {(users.data ?? []).map((u) => <option key={u.id} value={u.id}>{u.fullName}</option>)}
             </select></div>
