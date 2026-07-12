@@ -82,7 +82,7 @@ export const LIFECYCLE_META: Record<string, { label: string; color: string }> = 
   before_signature: { label: "Před podpisem", color: "#a78bfa" }, // fialová
   active_client: { label: "Aktivní klient", color: "#34d399" },   // mint
   on_hold: { label: "Pozastaveno", color: "#94a3b8" },            // šedomodrá
-  past_client: { label: "Bývalý klient", color: "#64748b" },      // šedá
+  past_client: { label: "Lost", color: "#f87171" },               // červená (ztracený)
   partner: { label: "Partner", color: "#2dd4bf" },                // tyrkysová
 };
 export const LIFECYCLE_OPTIONS = Object.entries(LIFECYCLE_META).map(([value, m]) => ({ value, label: m.label }));
