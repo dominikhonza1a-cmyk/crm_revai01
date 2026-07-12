@@ -52,10 +52,10 @@ function CashflowBars({ months }: { months: DashboardData["finance"]["months"] }
             </div>
             {/* osa */}
             <div className="my-0.5 h-px w-full bg-line" />
-            {/* výdaje dolů */}
-            <div className="flex h-16 w-full items-start">
+            {/* výdaje dolů — stejně vysoký kontejner i měřítko jako příjmy (aby stejná částka = stejná výška) */}
+            <div className="flex h-24 w-full items-start">
               <div className="w-full rounded-b-md bg-red-400/70 transition-colors group-hover:bg-red-400"
-                style={{ height: `${Math.max(2, (ve / max) * 100 * (16 / 24))}%`, opacity: ve > 0 ? 1 : 0.2 }} />
+                style={{ height: `${Math.max(2, (ve / max) * 100)}%`, opacity: ve > 0 ? 1 : 0.2 }} />
             </div>
             <span className={`mt-1 text-[10px] font-medium ${net > 0 ? "text-accent" : net < 0 ? "text-red-300" : "text-faint"}`}>{label}</span>
           </div>
@@ -80,7 +80,8 @@ function TodayCard() {
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-faint">📅 Schůzky (můj kalendář)</h3>
-          {!agenda.data ? <p className="text-sm text-faint">Načítám…</p>
+          {agenda.error ? <p className="text-sm text-red-300">Kalendář se nepodařilo načíst — zkus <Link href="/settings" className="underline">připojit Google znovu</Link>.</p>
+            : agenda.isLoading || !agenda.data ? <p className="text-sm text-faint">Načítám…</p>
             : !agenda.data.connected ? (
               <p className="text-sm text-faint">Google kalendář nepřipojen — <Link href="/settings" className="text-accent hover:underline">připojit v Nastavení</Link></p>
             ) : agenda.data.events.length === 0 ? (
@@ -99,7 +100,8 @@ function TodayCard() {
         </div>
         <div>
           <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-faint">✅ Úkoly do dneška</h3>
-          {!tasks.data ? <p className="text-sm text-faint">Načítám…</p>
+          {tasks.error ? <p className="text-sm text-red-300">Úkoly se nepodařilo načíst.</p>
+            : tasks.isLoading || !tasks.data ? <p className="text-sm text-faint">Načítám…</p>
             : tasks.data.length === 0 ? <p className="text-sm text-faint">Žádné úkoly do dneška</p>
             : (
               <ul className="space-y-1.5">
@@ -139,8 +141,8 @@ export function DashboardView({ data }: { data: DashboardData }) {
   const fin = data.finance;
   const net = Number(fin.retainerMonthlyCzkMinor) - Number(fin.subsMonthlyCzkMinor);
 
-  // Cashflow za zvolené období: retainery a fixní náklady × počet měsíců + jednorázové výdaje v období.
-  // Jednorázové výdaje měsíce = expense měsíce − fixní (obojí máme v months).
+  // Cashflow za zvolené období: příjmy = běžící retainery × počet měsíců (nemáme jejich historii),
+  // výdaje = skutečný součet měsíčních výdajů z grafu (fixní dle platnosti + jednorázové).
   const nowD = new Date();
   const thisYear = nowD.getFullYear();
   const q = Math.floor(nowD.getMonth() / 3);
@@ -149,13 +151,11 @@ export function DashboardView({ data }: { data: DashboardData }) {
     : period === "quarter"
       ? [0, 1, 2].map((i) => `${thisYear}-${String(q * 3 + i + 1).padStart(2, "0")}`)
       : Array.from({ length: 12 }, (_, i) => `${thisYear}-${String(i + 1).padStart(2, "0")}`);
-  const subsM = Number(fin.subsMonthlyCzkMinor);
-  const oneOffInPeriod = fin.months
-    .filter((m) => periodMonths.includes(m.month))
-    .reduce((a, m) => a + Math.max(0, Number(m.expenseCzkMinor) - subsM), 0);
   const nMonths = periodMonths.length;
   const periodIncome = Number(fin.retainerMonthlyCzkMinor) * nMonths;
-  const periodExpense = subsM * nMonths + oneOffInPeriod;
+  const periodExpense = fin.months
+    .filter((m) => periodMonths.includes(m.month))
+    .reduce((a, m) => a + Number(m.expenseCzkMinor), 0);
   const periodCashflow = periodIncome - periodExpense;
   const periodTitle = period === "month" ? "tento měsíc" : period === "quarter" ? `${q + 1}. kvartál` : `rok ${thisYear}`;
 

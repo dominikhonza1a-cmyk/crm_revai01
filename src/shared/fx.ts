@@ -12,7 +12,7 @@ export async function czkRates(): Promise<Record<string, number>> {
   const day = new Date().toISOString().slice(0, 10);
   if (cache?.day === day) return cache.rates;
   try {
-    const res = await fetch("https://www.cnb.cz/cs/financni-trhy/devizovy-trh/kurzy-devizoveho-trhu/kurzy-devizoveho-trhu/denni_kurz.txt", { signal: AbortSignal.timeout(5000) });
+    const res = await fetch("https://www.cnb.cz/cs/financni-trhy/devizovy-trh/kurzy-devizoveho-trhu/kurzy-devizoveho-trhu/denni_kurz.txt", { signal: AbortSignal.timeout(2000) });
     if (!res.ok) throw new Error(`ČNB ${res.status}`);
     const text = await res.text();
     const rates: Record<string, number> = { CZK: 1 };

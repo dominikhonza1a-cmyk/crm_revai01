@@ -75,6 +75,9 @@ export default function DealsPage() {
         ? <Empty>Zatím žádné dealy. Přidej první přes „+ Nový".</Empty>
         : <KanbanBoard stages={stages.data} deals={deals.data.items} onMove={onMove} onCardClick={setEditDealId} busy={move.isPending} />}
 
+      {/* Editace dealu (klik na kartu) */}
+      {editDealId && <EditDealModal dealId={editDealId} onClose={() => setEditDealId(null)} />}
+
       {/* Potvrzení výhry */}
       {pending && pending.stage.kind === "won" && (
         <Modal title="Označit jako vyhraný?" onClose={() => setPending(null)}>

@@ -16,7 +16,10 @@ export interface DealCreateInput {
   customFields?: Record<string, unknown>;
 }
 
-export type DealUpdateInput = Partial<Omit<DealCreateInput, "organizationId">>;
+export type DealUpdateInput = Partial<Omit<DealCreateInput, "organizationId" | "amountMinor" | "expectedCloseDate">> & {
+  amountMinor?: bigint | null;          // null = vymazat hodnotu
+  expectedCloseDate?: string | null;
+};
 
 export interface DealMoveStageInput {
   dealId: string;

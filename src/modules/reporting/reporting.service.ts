@@ -21,11 +21,11 @@ export const reportingService = {
    */
   async finance() {
     const ws = currentWorkspaceId();
-    const rates = await czkRates();
-
-    // Historicky vyděláno = SKUTEČNĚ PŘIJATÉ platby z projektů (zálohy + doplatky, CZK)
+    // kurzy ČNB paralelně s DB dotazy (cold instance tak nečeká sériově)
+    const ratesP = czkRates();
     const projRows = await db().select({ payments: projects.payments })
       .from(projects).where(and(eq(projects.workspaceId, ws), isNull(projects.deletedAt)));
+    const rates = await ratesP;
     let wonTotalCzkMinor = 0n;
     const byMonth = new Map<string, bigint>();
     for (const pr of projRows) {
@@ -36,20 +36,28 @@ export const reportingService = {
         byMonth.set(m, (byMonth.get(m) ?? 0n) + czk);
       }
     }
-    // Výdaje: fixní předplatná (aktuální stav, plošně) + jednorázové výdaje dle měsíce zaplacení
+    // Výdaje: fixní předplatná + jednorázové výdaje dle měsíce zaplacení.
+    // Fixní náklad se do daného měsíce počítá jen pokud předplatné v tom měsíci UŽ EXISTOVALO
+    // (dle created_at) — jinak by přidané předplatné retroaktivně zkreslilo historii grafu.
     const subRows = await db().select().from(subscriptions)
       .where(and(eq(subscriptions.workspaceId, ws), isNull(subscriptions.deletedAt)));
     let recurringMonthlyCzkMinor = 0n;
     const oneOffByMonth = new Map<string, bigint>();
+    const recurringActive: { fromMonth: string; monthlyCzk: bigint }[] = [];
     for (const su of subRows) {
       const czk = toCzkMinor(su.amountMinor, su.currency, rates);
       if (su.period === "one_off") {
         const m = (su.paidOn ?? su.createdAt.toISOString()).slice(0, 7);
         oneOffByMonth.set(m, (oneOffByMonth.get(m) ?? 0n) + czk);
       } else if (su.status === "active") {
-        recurringMonthlyCzkMinor += su.period === "yearly" ? czk / 12n : czk;
+        const monthly = su.period === "yearly" ? czk / 12n : czk;
+        recurringMonthlyCzkMinor += monthly;
+        recurringActive.push({ fromMonth: su.createdAt.toISOString().slice(0, 7), monthlyCzk: monthly });
       }
     }
+    // fixní náklady platné pro daný měsíc (jen ta předplatná, co už tehdy existovala)
+    const recurringForMonth = (m: string) =>
+      recurringActive.reduce((a, r) => a + (r.fromMonth <= m ? r.monthlyCzk : 0n), 0n);
 
     const months: { month: string; wonCzkMinor: bigint; expenseCzkMinor: bigint }[] = [];
     const now = new Date();
@@ -59,7 +67,7 @@ export const reportingService = {
       months.push({
         month: m,
         wonCzkMinor: byMonth.get(m) ?? 0n,
-        expenseCzkMinor: recurringMonthlyCzkMinor + (oneOffByMonth.get(m) ?? 0n),
+        expenseCzkMinor: recurringForMonth(m) + (oneOffByMonth.get(m) ?? 0n),
       });
     }
     const incomeThisMonth = byMonth.get(thisMonth) ?? 0n;

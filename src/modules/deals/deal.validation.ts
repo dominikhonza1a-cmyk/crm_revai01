@@ -15,7 +15,11 @@ export const dealCreateSchema = z.object({
   customFields: z.record(z.unknown()).optional(),
 });
 
-export const dealUpdateSchema = dealCreateSchema.partial().omit({ organizationId: true });
+export const dealUpdateSchema = dealCreateSchema.partial().omit({ organizationId: true }).extend({
+  // v editaci lze pole i VYMAZAT (null → NULL v DB)
+  amountMinor: z.bigint().nonnegative().nullable().optional(),
+  expectedCloseDate: z.string().date().nullable().optional(),
+});
 
 export const dealMoveStageSchema = z.object({
   dealId: z.string().uuid(),

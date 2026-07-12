@@ -76,6 +76,7 @@ export function EditDealModal({ dealId, onClose }: { dealId: string; onClose: ()
   const [title, setTitle] = useState<string | null>(null);
   const [amount, setAmount] = useState<string | null>(null);
   const [closeDate, setCloseDate] = useState<string | null>(null);
+  const [amountError, setAmountError] = useState<string | null>(null);
 
   const update = trpc.deals.update.useMutation({
     onSuccess: async () => { await Promise.all([utils.deals.list.invalidate(), utils.deals.get.invalidate({ id: dealId }), utils.reporting.dashboard.invalidate()]); onClose(); },
@@ -94,16 +95,20 @@ export function EditDealModal({ dealId, onClose }: { dealId: string; onClose: ()
     <Modal title="Upravit deal" onClose={onClose}>
       <form className="space-y-4" onSubmit={(e) => {
         e.preventDefault();
-        const n = parseFloat(amountVal.replace(",", "."));
+        const trimmed = amountVal.trim();
+        const n = parseFloat(trimmed.replace(",", "."));
+        if (trimmed && Number.isNaN(n)) { setAmountError("Zadej číslo, nebo pole nech prázdné."); return; }
+        setAmountError(null);
         update.mutate({
           id: dealId, title: titleVal,
-          amountMinor: amountVal.trim() && !Number.isNaN(n) ? BigInt(Math.round(n * 100)) : undefined,
-          expectedCloseDate: closeVal || undefined,
+          amountMinor: trimmed ? BigInt(Math.round(n * 100)) : null,   // prázdné = vymazat
+          expectedCloseDate: closeVal || null,
         });
       }}>
         <div><label className={fieldLabel}>Název *</label><input className={fieldInput} value={titleVal} onChange={(e) => setTitle(e.target.value)} required autoFocus /></div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <div><label className={fieldLabel}>Hodnota (Kč)</label><input className={fieldInput} inputMode="decimal" value={amountVal} onChange={(e) => setAmount(e.target.value)} placeholder="např. 49000" /></div>
+          <div><label className={fieldLabel}>Hodnota (Kč)</label><input className={fieldInput} inputMode="decimal" value={amountVal} onChange={(e) => { setAmount(e.target.value); setAmountError(null); }} placeholder="prázdné = bez hodnoty" />
+            {amountError && <p className="mt-1 text-xs text-red-300">{amountError}</p>}</div>
           <div><label className={fieldLabel}>Očekávané uzavření</label><input className={fieldInput} type="date" value={closeVal} onChange={(e) => setCloseDate(e.target.value)} /></div>
         </div>
         <p className="text-xs text-faint">

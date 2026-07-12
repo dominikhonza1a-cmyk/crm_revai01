@@ -25,6 +25,15 @@ export interface Context {
  *  4) načte efektivní oprávnění (RBAC v naší app).
  * Neautentizovaný request má userId=null → protectedProcedure vrátí UNAUTHORIZED.
  */
+/**
+ * Cache ověřeného kontextu per access token (TTL 60 s, žije v lambda instanci).
+ * Šetří 4 sekvenční kolečka (Supabase auth API + 3× DB) na KAŽDÝ request — na Netlify
+ * ~300–500 ms. Revokace session / změna role se projeví nejpozději za TTL.
+ */
+type CachedCtx = Pick<Context, "workspaceId" | "userId" | "authUserId" | "email" | "permissions">;
+const ctxCache = new Map<string, { value: CachedCtx; exp: number }>();
+const CTX_TTL_MS = 60_000;
+
 export async function createContext(opts: {
   accessToken: string | null;
   requestId: string;
@@ -36,6 +45,9 @@ export async function createContext(opts: {
     requestId: opts.requestId, ip: opts.ip, userAgent: opts.userAgent,
   };
   if (!opts.accessToken) return base;
+
+  const cached = ctxCache.get(opts.accessToken);
+  if (cached && cached.exp > Date.now()) return { ...base, ...cached.value };
 
   const identity = await resolveAuthProvider().verifyToken(opts.accessToken);
   if (!identity) return base;
@@ -52,12 +64,15 @@ export async function createContext(opts: {
   const ws = (await conn.select().from(workspaces).where(eq(workspaces.id, user.workspaceId)).limit(1))[0];
   const permissions = await securityService.effectivePermissions(asId<UserId>(user.id));
 
-  return {
-    ...base,
+  const value: CachedCtx = {
     workspaceId: ws ? asId<WorkspaceId>(ws.id) : null,
     userId: asId<UserId>(user.id),
     authUserId: identity.authUserId,
     email: identity.email,
     permissions,
   };
+  // jednoduchá ochrana proti růstu (2 uživatelé × pár tokenů; 100 = bohatá rezerva)
+  if (ctxCache.size > 100) ctxCache.clear();
+  ctxCache.set(opts.accessToken, { value, exp: Date.now() + CTX_TTL_MS });
+  return { ...base, ...value };
 }
