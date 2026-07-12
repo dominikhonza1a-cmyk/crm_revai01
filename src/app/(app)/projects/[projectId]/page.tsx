@@ -235,17 +235,18 @@ function FinanceCard({ projectId, isRetainer, priceMinor, monthlyMinor, retainer
         )}
 
         <div className="border-t border-line pt-3">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-muted">Platby (zálohy a doplatky)</span>
+          <div className="mb-1 flex items-center justify-between">
+            <span className="text-muted">Jednorázové platby (zálohy, doplatky)</span>
             <span className="font-medium text-ink">{money(paid)} přijato</span>
           </div>
+          <p className="mb-2 text-xs text-faint">Retainer se účtuje sám 1. den měsíce (přepínač výše). Sem přidávej jen jednorázové platby — v měsíci dle data se propíšou do cashflow.</p>
           {payments.map((pay, i) => (
             <div key={i} className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-xs hover:bg-white/5">
               <span className="text-faint">{pay.date}</span>
               <span className="flex-1 truncate text-muted">{pay.note ?? ""}</span>
               <span className="font-medium text-ink">{money(pay.amountMinor)}</span>
-              <button className="text-red-300 hover:underline" disabled={removePayment.isPending}
-                onClick={() => removePayment.mutate({ projectId, index: i })}>×</button>
+              <button className="rounded px-1.5 text-red-300 hover:bg-red-400/10 hover:underline" disabled={removePayment.isPending}
+                onClick={() => { if (confirm(`Smazat platbu ${money(pay.amountMinor)}${pay.note ? ` (${pay.note})` : ""}?`)) removePayment.mutate({ projectId, index: i }); }}>Smazat</button>
             </div>
           ))}
           <div className="mt-2 flex items-center gap-1.5">

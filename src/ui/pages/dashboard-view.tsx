@@ -197,11 +197,11 @@ export function DashboardView({ data }: { data: DashboardData }) {
     : period === "quarter"
       ? [0, 1, 2].map((i) => `${thisYear}-${String(q * 3 + i + 1).padStart(2, "0")}`)
       : Array.from({ length: 12 }, (_, i) => `${thisYear}-${String(i + 1).padStart(2, "0")}`);
-  const nMonths = periodMonths.length;
-  const periodIncome = Number(fin.retainerMonthlyCzkMinor) * nMonths;
-  const periodExpense = fin.months
-    .filter((m) => periodMonths.includes(m.month))
-    .reduce((a, m) => a + Number(m.expenseCzkMinor), 0);
+  // Příjmy období = skutečné platby v daných měsících (retainer auto-platby + jednorázové platby
+  // od klientů, které jsi zadal s datem) — tzn. cashflow tahá primárně od klientů.
+  const inPeriod = fin.months.filter((m) => periodMonths.includes(m.month));
+  const periodIncome = inPeriod.reduce((a, m) => a + Number(m.retainerIncCzkMinor) + Number(m.oneOffIncCzkMinor), 0);
+  const periodExpense = inPeriod.reduce((a, m) => a + Number(m.expenseCzkMinor), 0);
   const periodCashflow = periodIncome - periodExpense;
   const periodTitle = period === "month" ? "tento měsíc" : period === "quarter" ? `${q + 1}. kvartál` : `rok ${thisYear}`;
 
