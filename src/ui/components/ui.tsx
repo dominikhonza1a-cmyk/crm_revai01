@@ -34,10 +34,13 @@ export function StatCard({ label, value, hint, icon, iconSrc, tone = "accent", d
   );
 }
 
-export function SectionTitle({ children, right }: { children: ReactNode; right?: ReactNode }) {
+export function SectionTitle({ children, right, icon }: { children: ReactNode; right?: ReactNode; icon?: string }) {
   return (
     <div className="mb-4 flex items-center justify-between">
-      <h2 className="text-base font-semibold text-ink">{children}</h2>
+      <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
+        {icon && <img src={icon} alt="" width={26} height={26} className="pointer-events-none select-none" />}
+        {children}
+      </h2>
       {right}
     </div>
   );

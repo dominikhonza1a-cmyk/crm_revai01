@@ -6,6 +6,7 @@ import { documents, documentVersions, type DocumentRow, type DocumentVersionRow 
 
 export interface DocumentInsertData {
   kind: string; title: string; entityType: string; entityId: string; docCategory: string;
+  categoryLabel?: string | null; storageKey?: string | null;
   storageProvider?: string | null; externalUrl?: string | null; externalFileId?: string | null;
   mimeType?: string | null; containsPii?: boolean; secretLocation?: string | null; secretPolicyNote?: string | null;
   createdBy?: string | null;
@@ -30,7 +31,8 @@ export const documentRepository = {
     const id = randomUUID();
     await db().insert(documents).values({
       id, workspaceId: ws, kind: data.kind, title: data.title, entityType: data.entityType, entityId: data.entityId,
-      docCategory: data.docCategory, storageProvider: data.storageProvider ?? null, externalUrl: data.externalUrl ?? null,
+      docCategory: data.docCategory, categoryLabel: data.categoryLabel ?? null, storageProvider: data.storageProvider ?? null, externalUrl: data.externalUrl ?? null,
+      storageKey: data.storageKey ?? null,
       externalFileId: data.externalFileId ?? null, mimeType: data.mimeType ?? null, containsPii: data.containsPii ?? false,
       secretLocation: data.secretLocation ?? null, secretPolicyNote: data.secretPolicyNote ?? null, createdBy: data.createdBy ?? null,
     });

@@ -28,12 +28,17 @@ export const reportingService = {
     const rates = await ratesP;
     let wonTotalCzkMinor = 0n;
     const byMonth = new Map<string, bigint>();
+    // rozpad příjmů: platba s poznámkou „retainer…" = retainer, jinak jednorázový příjem
+    const retainerIncByMonth = new Map<string, bigint>();
+    const oneOffIncByMonth = new Map<string, bigint>();
     for (const pr of projRows) {
-      for (const pay of (pr.payments as { amountMinor: number; date: string }[]) ?? []) {
+      for (const pay of (pr.payments as { amountMinor: number; date: string; note?: string }[]) ?? []) {
         const czk = BigInt(Math.round(pay.amountMinor));
         wonTotalCzkMinor += czk;
         const m = (pay.date ?? "").slice(0, 7) || new Date().toISOString().slice(0, 7);
         byMonth.set(m, (byMonth.get(m) ?? 0n) + czk);
+        const bucket = (pay.note ?? "").startsWith("retainer") ? retainerIncByMonth : oneOffIncByMonth;
+        bucket.set(m, (bucket.get(m) ?? 0n) + czk);
       }
     }
     // Výdaje: fixní předplatná + jednorázové výdaje dle měsíce zaplacení.
@@ -59,15 +64,21 @@ export const reportingService = {
     const recurringForMonth = (m: string) =>
       recurringActive.reduce((a, r) => a + (r.fromMonth <= m ? r.monthlyCzk : 0n), 0n);
 
-    const months: { month: string; wonCzkMinor: bigint; expenseCzkMinor: bigint }[] = [];
+    const months: { month: string; wonCzkMinor: bigint; expenseCzkMinor: bigint;
+      retainerIncCzkMinor: bigint; oneOffIncCzkMinor: bigint; recurringExpCzkMinor: bigint; oneOffExpCzkMinor: bigint }[] = [];
     const now = new Date();
     const thisMonth = now.toISOString().slice(0, 7);
     for (let i = 11; i >= 0; i--) {
       const m = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1)).toISOString().slice(0, 7);
+      const recExp = recurringForMonth(m), oneExp = oneOffByMonth.get(m) ?? 0n;
       months.push({
         month: m,
         wonCzkMinor: byMonth.get(m) ?? 0n,
-        expenseCzkMinor: recurringForMonth(m) + (oneOffByMonth.get(m) ?? 0n),
+        expenseCzkMinor: recExp + oneExp,
+        retainerIncCzkMinor: retainerIncByMonth.get(m) ?? 0n,
+        oneOffIncCzkMinor: oneOffIncByMonth.get(m) ?? 0n,
+        recurringExpCzkMinor: recExp,
+        oneOffExpCzkMinor: oneExp,
       });
     }
     const incomeThisMonth = byMonth.get(thisMonth) ?? 0n;
@@ -106,16 +117,12 @@ export const reportingService = {
       .groupBy(pipelineStages.name, pipelineStages.position).orderBy(pipelineStages.position);
   },
 
-  /** Win-rate = won / (won + lost). */
-  async winRate() {
+  /** Aktivní (uzavření) klienti — historicky vyhraný byznys. */
+  async activeClients() {
     const ws = currentWorkspaceId();
-    const rows = await db().select({ kind: pipelineStages.kind, count: sql<number>`count(*)::int` })
-      .from(deals).innerJoin(pipelineStages, eq(deals.pipelineStageId, pipelineStages.id))
-      .where(and(eq(deals.workspaceId, ws), isNull(deals.deletedAt), inArray(pipelineStages.kind, ["won", "lost"])))
-      .groupBy(pipelineStages.kind);
-    const won = rows.find((r) => r.kind === "won")?.count ?? 0;
-    const lost = rows.find((r) => r.kind === "lost")?.count ?? 0;
-    return { won, lost, winRatePct: won + lost > 0 ? Math.round((won / (won + lost)) * 100) : null };
+    const r = (await db().select({ n: sql<number>`count(*)::int` }).from(organizations)
+      .where(and(eq(organizations.workspaceId, ws), isNull(organizations.deletedAt), eq(organizations.lifecycleStage, "active_client"))))[0];
+    return { count: r?.n ?? 0 };
   },
 
   /** Počet projektů dle stavu. */
@@ -166,22 +173,22 @@ export const reportingService = {
       .orderBy(tasks.dueAt).limit(8);
   },
 
-  /** Moje práce — počet otevřených tasků přiřazených uživateli. */
-  async myWork(userId: string) {
+  /** Otevřené úkoly celého workspace (sdílené — 2 admini vidí vše). */
+  async openTasks() {
     const ws = currentWorkspaceId();
     const r = (await db().select({ n: sql<number>`count(*)::int` }).from(tasks)
-      .where(and(eq(tasks.workspaceId, ws), isNull(tasks.deletedAt), eq(tasks.assigneeId, userId),
-        inArray(tasks.status, ["todo", "in_progress", "blocked"]))))[0];
+      .where(and(eq(tasks.workspaceId, ws), isNull(tasks.deletedAt),
+        inArray(tasks.status, ["todo", "in_progress", "blocked", "waiting_on_client"]))))[0];
     return { count: r?.n ?? 0 };
   },
 
   /** Souhrn dashboardu — sada widgetů najednou. */
-  async dashboard(ctx: TenantContext) {
-    const [pipeline, win, projStatus, overdue, tickets, revenue, mine, finance] = await Promise.all([
-      this.pipelineValue(), this.winRate(), this.projectsStatus(), this.overdueTasks(),
-      this.openTickets(), this.revenuePerClient(), ctx.userId ? this.myWork(ctx.userId) : Promise.resolve({ count: 0 }),
+  async dashboard(_ctx: TenantContext) {
+    const [pipeline, clients, projStatus, overdue, tickets, revenue, openTasks, finance] = await Promise.all([
+      this.pipelineValue(), this.activeClients(), this.projectsStatus(), this.overdueTasks(),
+      this.openTickets(), this.revenuePerClient(), this.openTasks(),
       this.finance(),
     ]);
-    return { pipeline, win, projStatus, overdue, tickets, revenue, myWork: mine, finance };
+    return { pipeline, activeClients: clients, projStatus, overdue, tickets, revenue, openTasks, finance };
   },
 };

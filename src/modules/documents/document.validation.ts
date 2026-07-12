@@ -7,8 +7,11 @@ export const documentCreateSchema = z.object({
   title: z.string().min(1).max(300),
   entityType: z.enum(["organization", "contact", "deal", "project", "task", "idea"]),
   entityId: z.string().uuid(),
-  docCategory: z.enum(["contract", "proposal", "spec", "credentials_ref", "deliverable", "other"]),
-  storageProvider: z.enum(["gdrive", "sharepoint", "url", "local"]).optional(),
+  docCategory: z.enum(["contract", "proposal", "spec", "credentials_ref", "deliverable", "questionnaire", "other"]),
+  categoryLabel: z.string().max(100).optional(),   // volný popis při „Jiné"
+  storageProvider: z.enum(["gdrive", "sharepoint", "url", "local", "supabase"]).optional(),
+  storageKey: z.string().max(500).optional(),      // native_file → cesta v Supabase Storage
+  mimeType: z.string().max(120).optional(),
   externalUrl: urlish.optional(),
   secretLocation: z.string().max(500).optional(),
   secretPolicyNote: z.string().max(1000).optional(),

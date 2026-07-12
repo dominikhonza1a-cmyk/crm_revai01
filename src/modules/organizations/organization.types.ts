@@ -7,6 +7,7 @@ export interface OrganizationCreateInput {
   lifecycleStage?: LifecycleStage;
   employeeBand?: EmployeeBand;
   industry?: string;
+  source?: string | null;
   ownerId?: string;
   supportSlaPolicyId?: string;
   customFields?: Record<string, unknown>;

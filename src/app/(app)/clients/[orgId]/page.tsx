@@ -11,6 +11,7 @@ import { TagPicker } from "@/ui/components/tag-picker";
 import { CustomFieldsCard } from "@/ui/components/custom-fields-card";
 import { EditClientModal } from "@/ui/components/edit-modals";
 import { EditContactModal } from "@/ui/components/edit-contact-task";
+import { NewProjectModal } from "@/ui/components/new-entity-modals";
 
 const LIFECYCLE: Record<string, { label: string; tone: "slate" | "green" | "amber" | "blue" }> = {
   prospect: { label: "Prospekt", tone: "blue" }, active_client: { label: "Klient", tone: "green" },
@@ -44,7 +45,7 @@ export default function ClientDetailPage() {
           onClick={() => setEditing(true)}>✎ Upravit</button>
       </div>
       {editing && <EditClientModal onClose={() => setEditing(false)}
-        org={{ id: orgId, name: o.name, website: o.website, industry: o.industry, employeeBand: o.employeeBand, lifecycleStage: o.lifecycleStage }} />}
+        org={{ id: orgId, name: o.name, website: o.website, industry: o.industry, employeeBand: o.employeeBand, lifecycleStage: o.lifecycleStage, source: o.source }} />}
       <Tabs tabs={TABS} active={tab} onChange={setTab} />
 
       {tab === "overview" && (
@@ -73,11 +74,21 @@ function Row({ label, value }: { label: string; value: string }) {
 
 function ProjectsTab({ orgId }: { orgId: string }) {
   const q = trpc.projects.list.useQuery({ organizationId: orgId });
+  const [creating, setCreating] = useState(false);
   if (q.isLoading || !q.data) return <Loading />;
-  if (!q.data.items.length) return <Empty>Žádné projekty</Empty>;
-  return <div className="grid gap-3 sm:grid-cols-2">{q.data.items.map((p) => (
-    <Link key={p.id} href={`/projects/${p.id}`} className="block h-full"><Card className="h-full hover:border-accent/40"><div className="flex items-center justify-between"><span className="font-medium text-ink">{p.name}</span><Badge tone={p.status === "active" ? "green" : "slate"}>{p.status}</Badge></div></Card></Link>
-  ))}</div>;
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <button className="rounded-xl border border-line px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent/40 hover:text-accent" onClick={() => setCreating(true)}>+ Nový projekt</button>
+      </div>
+      {!q.data.items.length ? <Empty doodle="/doodles/rocket.png">Žádné projekty</Empty> : (
+        <div className="grid gap-3 sm:grid-cols-2">{q.data.items.map((p) => (
+          <Link key={p.id} href={`/projects/${p.id}`} className="block h-full"><Card className="h-full hover:border-accent/40"><div className="flex items-center justify-between"><span className="font-medium text-ink">{p.name}</span><Badge tone={p.status === "active" ? "green" : "slate"}>{p.status}</Badge></div></Card></Link>
+        ))}</div>
+      )}
+      {creating && <NewProjectModal defaultOrgId={orgId} onClose={() => setCreating(false)} />}
+    </div>
+  );
 }
 
 function ContactsTab({ orgId }: { orgId: string }) {

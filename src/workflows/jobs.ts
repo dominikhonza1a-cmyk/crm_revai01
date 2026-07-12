@@ -12,6 +12,8 @@ import { projects } from "@/modules/projects/project.entity";
 import { and, eq, isNull } from "drizzle-orm";
 import { activityService } from "@/modules/activities/activity.service";
 import { notifications } from "@/shared/notifications/notification.service";
+import { reportingService } from "@/modules/reporting/reporting.service";
+import { resolveEmailProvider } from "@/adapters/email";
 import { elapsedFraction, nextEscalationStep } from "@/domain/policies/sla.policy";
 import { nextOccurrences } from "@/domain/policies/recurrence.policy";
 import { asId, type WorkspaceId } from "@/domain/ids";
@@ -183,7 +185,44 @@ export async function runDailyDigest(): Promise<void> {
     const res = await notifications.sendDigest();
     if (res.items) logger.info("digest odeslán", res);
   });
+  await runMorningSummary();
 }
+
+/**
+ * Ranní souhrn „co je potřeba udělat" — e-mail všem aktivním uživatelům: úkoly po termínu,
+ * úkoly s termínem dnes a otevřené tickety. Posílá se i když nic nehoří (krátká zpráva).
+ */
+export async function runMorningSummary(now = new Date()): Promise<{ sent: number }> {
+  let sent = 0;
+  await forEachWorkspace("morning-summary", async () => {
+    const overdue = await reportingService.todayTasks();   // po termínu + dnes (limit 8)
+    const tickets = await reportingService.openTickets();
+    const ticketCount = tickets.reduce((a, t) => a + t.count, 0);
+    const users = await securityRepository.listUsersWithRoles();
+    const recipients = users.filter((u) => u.status !== "deactivated" && u.email);
+    if (!recipients.length) return;
+
+    const day = now.toLocaleDateString("cs-CZ", { weekday: "long", day: "numeric", month: "long" });
+    const taskLines = overdue.length
+      ? "<ul>" + overdue.map((t) => `<li>${escapeHtml(t.title)}${t.dueAt ? ` — do ${new Date(t.dueAt).toLocaleDateString("cs-CZ")}` : ""}</li>`).join("") + "</ul>"
+      : "<p>Žádné úkoly s termínem — čistý stůl. ✅</p>";
+    const ticketLine = ticketCount ? `<p>Otevřené tickety: <b>${ticketCount}</b></p>` : "";
+    const html = `<div style="font-family:system-ui,sans-serif">
+      <h2>Dobré ráno — ${day}</h2>
+      <h3>Co je dnes potřeba</h3>${taskLines}${ticketLine}
+      <p style="color:#888;font-size:12px">revai CRM · <a href="${loadConfig().APP_URL}/dashboard">otevřít dashboard</a></p></div>`;
+
+    const email = resolveEmailProvider();
+    for (const u of recipients) {
+      try { await email.send({ to: [u.email], subject: `revai CRM — ranní souhrn (${overdue.length} úkolů)`, html }); sent++; }
+      catch (err) { logger.warn("ranní souhrn selhal", { user: u.email, err: String(err) }); }
+    }
+  });
+  if (sent) logger.info("ranní souhrn odeslán", { sent });
+  return { sent };
+}
+
+const escapeHtml = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
 
 /** Doručení immediate notifikací, které selhaly / čekají (retry pás). */
 export async function runDispatchPending(): Promise<void> {

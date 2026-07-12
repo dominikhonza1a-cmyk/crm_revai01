@@ -5,7 +5,7 @@ import { reportingService } from "./reporting.service";
 export const reportingRouter = router({
   dashboard: protectedProcedure.use(requirePermission("reporting", "read")).query(({ ctx }) => reportingService.dashboard(ctx)),
   pipelineValue: protectedProcedure.use(requirePermission("reporting", "read")).query(() => reportingService.pipelineValue()),
-  winRate: protectedProcedure.use(requirePermission("reporting", "read")).query(() => reportingService.winRate()),
+  activeClients: protectedProcedure.use(requirePermission("reporting", "read")).query(() => reportingService.activeClients()),
   projectsStatus: protectedProcedure.use(requirePermission("reporting", "read")).query(() => reportingService.projectsStatus()),
   openTickets: protectedProcedure.use(requirePermission("reporting", "read")).query(() => reportingService.openTickets()),
   revenuePerClient: protectedProcedure.use(requirePermission("reporting", "read")).query(() => reportingService.revenuePerClient()),

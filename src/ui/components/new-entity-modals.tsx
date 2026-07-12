@@ -6,17 +6,17 @@ import { trpc } from "@/ui/trpc";
 import { Modal, fieldInput, fieldLabel, btnPrimary, btnGhost, formatError } from "./ui";
 
 /** Ruční založení projektu (Won → projekt zůstává automatika; tohle je pro retainery/ad-hoc). */
-export function NewProjectModal({ onClose }: { onClose: () => void }) {
+export function NewProjectModal({ onClose, defaultOrgId }: { onClose: () => void; defaultOrgId?: string }) {
   const router = useRouter();
   const utils = trpc.useUtils();
   const orgs = trpc.organizations.list.useQuery({});
-  const [organizationId, setOrganizationId] = useState("");
+  const [organizationId, setOrganizationId] = useState(defaultOrgId ?? "");
   const [name, setName] = useState("");
   const [projectType, setProjectType] = useState<"chatbot_voicebot" | "process_automation" | "custom_ai">("chatbot_voicebot");
   const [engagementType, setEngagementType] = useState<"one_off" | "retainer">("one_off");
 
   const create = trpc.projects.create.useMutation({
-    onSuccess: async (res) => { await utils.projects.list.invalidate(); onClose(); router.push(`/projects/${res.id}`); },
+    onSuccess: async (res) => { await Promise.all([utils.projects.list.invalidate(), utils.reporting.dashboard.invalidate()]); onClose(); router.push(`/projects/${res.id}`); },
   });
 
   return (

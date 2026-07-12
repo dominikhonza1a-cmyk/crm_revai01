@@ -8,7 +8,7 @@ import { Modal, fieldInput, fieldLabel, btnPrimary, btnGhost, formatError } from
 
 /** Editace stávajícího klienta (název, web, odvětví, velikost, stav vztahu). */
 export function EditClientModal({ org, onClose }: {
-  org: { id: string; name: string; website: string | null; industry: string | null; employeeBand: string | null; lifecycleStage: string };
+  org: { id: string; name: string; website: string | null; industry: string | null; employeeBand: string | null; lifecycleStage: string; source: string | null };
   onClose: () => void;
 }) {
   const utils = trpc.useUtils();
@@ -16,6 +16,7 @@ export function EditClientModal({ org, onClose }: {
   const [name, setName] = useState(org.name);
   const [website, setWebsite] = useState(org.website ?? "");
   const [industry, setIndustry] = useState(org.industry ?? "");
+  const [source, setSource] = useState(org.source ?? "");
   const [employeeBand, setEmployeeBand] = useState(org.employeeBand ?? "");
   const [lifecycle, setLifecycle] = useState(org.lifecycleStage);
 
@@ -34,6 +35,7 @@ export function EditClientModal({ org, onClose }: {
           id: org.id, name,
           website: website.trim() || undefined,
           industry: industry.trim() || undefined,
+          source: source.trim() || null,
           employeeBand: (employeeBand || undefined) as never,
           lifecycleStage: lifecycle as never,
         });
@@ -42,6 +44,7 @@ export function EditClientModal({ org, onClose }: {
         <div className="grid gap-3 sm:grid-cols-2">
           <div><label className={fieldLabel}>Web</label><input className={fieldInput} value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="www.klient.cz" /></div>
           <div><label className={fieldLabel}>Odvětví</label><input className={fieldInput} value={industry} onChange={(e) => setIndustry(e.target.value)} placeholder="zdravotnictví…" /></div>
+          <div><label className={fieldLabel}>Zdroj</label><input className={fieldInput} value={source} onChange={(e) => setSource(e.target.value)} placeholder="doporučení, web, kampaň…" /></div>
           <div><label className={fieldLabel}>Velikost</label>
             <select className={fieldInput} value={employeeBand} onChange={(e) => setEmployeeBand(e.target.value)}>
               <option value="">—</option><option value="1_49">1–49</option><option value="50_199">50–199</option>

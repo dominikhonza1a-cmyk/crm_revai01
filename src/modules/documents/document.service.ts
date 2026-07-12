@@ -15,8 +15,8 @@ export const documentService = {
   async link(ctx: TenantContext, input: DocumentCreateInput): Promise<{ documentId: string }> {
     const doc = await documentRepository.create({
       kind: input.kind, title: input.title, entityType: input.entityType, entityId: input.entityId,
-      docCategory: input.docCategory, storageProvider: input.storageProvider, externalUrl: input.externalUrl,
-      mimeType: undefined, containsPii: input.containsPii, secretLocation: input.secretLocation, secretPolicyNote: input.secretPolicyNote,
+      docCategory: input.docCategory, categoryLabel: input.categoryLabel, storageProvider: input.storageProvider, externalUrl: input.externalUrl,
+      storageKey: input.storageKey, mimeType: input.mimeType, containsPii: input.containsPii, secretLocation: input.secretLocation, secretPolicyNote: input.secretPolicyNote,
       createdBy: ctx.userId,
     });
 

@@ -8,6 +8,16 @@ import { NewDocumentModal, NewNoteModal } from "./entity-forms";
 type Host = "organization" | "contact" | "deal" | "project" | "task" | "idea";
 
 const addBtn = "rounded-xl border border-line px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent/40 hover:text-accent";
+const DOC_CAT_LABEL: Record<string, string> = { contract: "Smlouva", proposal: "Nabídka", questionnaire: "Dotazník", spec: "Specifikace", deliverable: "Výstup", credentials_ref: "Přístupy", other: "Jiné" };
+
+/** Odkaz ke stažení nahraného souboru — vyžádá si podepsanou URL a otevře ji. */
+function DownloadLink({ id, title }: { id: string; title: string }) {
+  const dl = trpc.documents.downloadUrl.useMutation({ onSuccess: (r) => window.open(r.url, "_blank", "noopener") });
+  return (
+    <button className="text-ink hover:text-accent hover:underline disabled:opacity-60" disabled={dl.isPending}
+      onClick={() => dl.mutate({ id })}>{title} {dl.isPending ? "…" : "↓"}</button>
+  );
+}
 
 /** Agregovaná timeline entity (read-only feed) + přidání poznámky. */
 export function TimelineTab({ entityType, entityId }: { entityType: Host; entityId: string }) {
@@ -49,12 +59,17 @@ export function DocumentsTab({ entityType, entityId }: { entityType: Host; entit
           <ul className="divide-y divide-line">
             {q.data.map((d) => (
               <li key={d.id} className="flex items-center justify-between px-4 py-3">
-                {d.kind === "external_ref" && d.externalUrl
-                  ? <a href={d.externalUrl} target="_blank" rel="noreferrer" className="text-ink hover:text-accent hover:underline">{d.title} ↗</a>
-                  : <span className="text-ink">{d.title}</span>}
-                <span className="flex items-center gap-2">
+                <span className="min-w-0">
+                  {d.kind === "external_ref" && d.externalUrl
+                    ? <a href={d.externalUrl} target="_blank" rel="noreferrer" className="text-ink hover:text-accent hover:underline">{d.title} ↗</a>
+                    : d.kind === "native_file"
+                      ? <DownloadLink id={d.id} title={d.title} />
+                      : <span className="text-ink">{d.title}</span>}
+                  {(d.categoryLabel || d.docCategory) && <span className="ml-2 text-xs text-faint">{d.categoryLabel ?? DOC_CAT_LABEL[d.docCategory] ?? d.docCategory}</span>}
+                </span>
+                <span className="flex shrink-0 items-center gap-2">
                   <Badge tone={d.kind === "secret_ref" ? "red" : d.kind === "native_file" ? "blue" : "slate"}>
-                    {d.kind === "external_ref" ? "odkaz" : d.kind === "secret_ref" ? "secret" : "soubor"}
+                    {d.kind === "external_ref" ? "odkaz" : d.kind === "secret_ref" ? "přístupy" : "soubor"}
                   </Badge>
                   <button className="text-xs text-red-300 hover:underline" title="Smazat dokument" disabled={removeDoc.isPending}
                     onClick={() => { if (confirm(`Smazat dokument „${d.title}"?`)) removeDoc.mutate({ id: d.id }); }}>×</button>

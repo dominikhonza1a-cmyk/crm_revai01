@@ -5,10 +5,14 @@ export interface DocumentCreateInput {
   title: string;
   entityType: TimelineHostEntity;
   entityId: string;
-  docCategory: "contract" | "proposal" | "spec" | "credentials_ref" | "deliverable" | "other";
+  docCategory: "contract" | "proposal" | "spec" | "credentials_ref" | "deliverable" | "questionnaire" | "other";
+  categoryLabel?: string;             // volný popis při „Jiné"
   // external_ref
-  storageProvider?: "gdrive" | "sharepoint" | "url" | "local";
+  storageProvider?: "gdrive" | "sharepoint" | "url" | "local" | "supabase";
   externalUrl?: string;
+  // native_file
+  storageKey?: string;
+  mimeType?: string;
   // secret_ref (external_url MUSÍ být prázdné)
   secretLocation?: string;
   secretPolicyNote?: string;

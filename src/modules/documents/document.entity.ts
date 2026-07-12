@@ -16,6 +16,8 @@ export const documents = pgTable("document", {
   title: text("title").notNull(),
   mimeType: text("mime_type"),
   docCategory: text("doc_category").notNull().default("other"),
+  categoryLabel: text("category_label"),                  // volný popis při „Jiné"
+  storageKey: text("storage_key"),                        // native_file → cesta v Supabase Storage
   entityType: text("entity_type").notNull(),
   entityId: uuid("entity_id").notNull(),
   currentVersionId: uuid("current_version_id"),

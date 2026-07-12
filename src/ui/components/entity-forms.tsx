@@ -43,60 +43,109 @@ export function NewContactModal({ organizationId, onClose }: { organizationId: s
   );
 }
 
-/** Nový dokument — odkaz na externí úložiště, nebo secret reference (bez URL!). */
+const DOC_CATEGORIES = [
+  ["contract", "Smlouva"], ["proposal", "Nabídka"], ["questionnaire", "Dotazník"],
+  ["spec", "Specifikace"], ["deliverable", "Výstup"], ["other", "Jiné"],
+] as const;
+
+/** Nový dokument — nahraný soubor, odkaz na externí úložiště, nebo secret reference (bez obsahu). */
 export function NewDocumentModal({ entityType, entityId, onClose }: { entityType: Host; entityId: string; onClose: () => void }) {
   const utils = trpc.useUtils();
-  const [kind, setKind] = useState<"external_ref" | "secret_ref">("external_ref");
+  const [kind, setKind] = useState<"native_file" | "external_ref" | "secret_ref">("native_file");
   const [title, setTitle] = useState("");
   const [externalUrl, setUrl] = useState("");
   const [secretLocation, setSecretLoc] = useState("");
-  const [docCategory, setCategory] = useState("other");
-  const link = trpc.documents.link.useMutation({
-    onSuccess: async () => { await utils.documents.list.invalidate(); onClose(); },
-  });
+  const [docCategory, setCategory] = useState("questionnaire");
+  const [categoryLabel, setCategoryLabel] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const uploadUrl = trpc.documents.uploadUrl.useMutation();
+  const link = trpc.documents.link.useMutation();
+  const finish = async () => { await utils.documents.list.invalidate(); onClose(); };
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setErr(null); setBusy(true);
+    try {
+      let storageKey: string | undefined;
+      if (kind === "native_file") {
+        if (!file) { setErr("Vyber soubor."); return; }
+        const up = await uploadUrl.mutateAsync({ filename: file.name });
+        // upload přímo do Supabase Storage přes podepsanou URL
+        const { createBrowserClient } = await import("@supabase/ssr");
+        const sb = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!);
+        const { error } = await sb.storage.from(up.bucket).uploadToSignedUrl(up.path, up.token, file);
+        if (error) throw new Error(`Nahrání selhalo: ${error.message}`);
+        storageKey = up.path;
+      }
+      await link.mutateAsync({
+        kind, title: title || file?.name || "Dokument", entityType, entityId,
+        docCategory: (kind === "secret_ref" ? "credentials_ref" : docCategory) as never,
+        categoryLabel: docCategory === "other" ? (categoryLabel.trim() || undefined) : undefined,
+        externalUrl: kind === "external_ref" ? externalUrl : undefined,
+        storageProvider: kind === "native_file" ? "supabase" : kind === "external_ref" ? (/drive\.google|docs\.google/.test(externalUrl) ? "gdrive" : "url") : undefined,
+        storageKey, mimeType: file?.type || undefined,
+        secretLocation: kind === "secret_ref" ? secretLocation : undefined,
+        containsPii: false,
+      });
+      await finish();
+    } catch (e) {
+      setErr(formatError((e as Error).message));
+    } finally { setBusy(false); }
+  }
 
   return (
     <Modal title="Nový dokument" onClose={onClose}>
-      <form className="space-y-4" onSubmit={(e) => {
-        e.preventDefault();
-        const isDrive = /drive\.google|docs\.google/.test(externalUrl);
-        link.mutate({
-          kind, title, entityType, entityId,
-          docCategory: (kind === "secret_ref" ? "credentials_ref" : docCategory) as never,
-          externalUrl: kind === "external_ref" ? externalUrl : undefined,
-          storageProvider: kind === "external_ref" ? (isDrive ? "gdrive" : "url") : undefined,
-          secretLocation: kind === "secret_ref" ? secretLocation : undefined,
-          containsPii: false,
-        });
-      }}>
+      <form className="space-y-4" onSubmit={submit}>
         <div>
           <label className={fieldLabel}>Typ</label>
           <select className={fieldInput} value={kind} onChange={(e) => setKind(e.target.value as never)}>
+            <option value="native_file">Nahrát soubor (smlouva, dotazník…)</option>
             <option value="external_ref">Odkaz (Drive / web)</option>
-            <option value="secret_ref">Secret reference (přístupy — bez obsahu)</option>
+            <option value="secret_ref">Přístupy — jen odkaz, bez obsahu</option>
           </select>
         </div>
-        <div><label className={fieldLabel}>Název *</label><input className={fieldInput} value={title} onChange={(e) => setTitle(e.target.value)} required autoFocus /></div>
-        {kind === "external_ref" ? (
+
+        {kind === "native_file" && (
+          <div>
+            <label className={fieldLabel}>Soubor *</label>
+            <input className="block w-full text-sm text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-accent-soft file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-accent hover:file:brightness-110"
+              type="file" onChange={(e) => { const f = e.target.files?.[0] ?? null; setFile(f); if (f && !title) setTitle(f.name); }} required />
+            <p className="mt-1.5 text-xs text-faint">Uloží se šifrovaně v našem úložišti (max 25 MB). PDF, obrázky, dokumenty…</p>
+          </div>
+        )}
+
+        <div><label className={fieldLabel}>Název {kind === "native_file" ? "" : "*"}</label><input className={fieldInput} value={title} onChange={(e) => setTitle(e.target.value)} required={kind !== "native_file"} placeholder={file?.name} /></div>
+
+        {kind === "external_ref" && (
+          <div><label className={fieldLabel}>URL *</label><input className={fieldInput} type="text" value={externalUrl} onChange={(e) => setUrl(e.target.value)} placeholder="drive.google.com/… (https:// doplníme)" required /></div>
+        )}
+
+        {kind !== "secret_ref" ? (
           <>
-            <div><label className={fieldLabel}>URL *</label><input className={fieldInput} type="text" value={externalUrl} onChange={(e) => setUrl(e.target.value)} placeholder="drive.google.com/… (https:// doplníme)" required /></div>
             <div><label className={fieldLabel}>Kategorie</label>
               <select className={fieldInput} value={docCategory} onChange={(e) => setCategory(e.target.value)}>
-                <option value="contract">Smlouva</option><option value="proposal">Nabídka</option><option value="spec">Specifikace</option><option value="deliverable">Výstup</option><option value="other">Ostatní</option>
+                {DOC_CATEGORIES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
             </div>
+            {docCategory === "other" && (
+              <div><label className={fieldLabel}>Upřesni kategorii</label><input className={fieldInput} value={categoryLabel} onChange={(e) => setCategoryLabel(e.target.value)} placeholder="např. předávací protokol" /></div>
+            )}
           </>
         ) : (
           <div>
-            <label className={fieldLabel}>Kde secret leží *</label>
+            <label className={fieldLabel}>Kde přístupy leží *</label>
             <input className={fieldInput} value={secretLocation} onChange={(e) => setSecretLoc(e.target.value)} placeholder="1Password / vault ACME / n8n-prod" required />
             <p className="mt-1.5 text-xs text-faint">Hodnota přístupů se do CRM nikdy neukládá — jen odkaz, kde je najdeš.</p>
           </div>
         )}
-        {link.error && <p className="text-sm text-red-300">{formatError(link.error.message)}</p>}
+
+        {err && <p className="text-sm text-red-300">{err}</p>}
         <div className="flex justify-end gap-2 pt-2">
           <button type="button" className={btnGhost} onClick={onClose}>Zrušit</button>
-          <button type="submit" className={btnPrimary} disabled={link.isPending}>{link.isPending ? "Ukládám…" : "Přidat"}</button>
+          <button type="submit" className={btnPrimary} disabled={busy}>{busy ? "Ukládám…" : "Přidat"}</button>
         </div>
       </form>
     </Modal>
