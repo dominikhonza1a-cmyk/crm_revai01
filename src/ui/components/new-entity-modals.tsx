@@ -48,14 +48,15 @@ export function NewProjectModal({ onClose, defaultOrgId }: { onClose: () => void
 }
 
 /** Nový úkol / ticket odkudkoli — s výběrem klienta a projektu. */
-export function NewStandaloneTaskModal({ onClose }: { onClose: () => void }) {
+export function NewStandaloneTaskModal({ onClose, defaultOrgId }: { onClose: () => void; defaultOrgId?: string }) {
   const utils = trpc.useUtils();
   const orgs = trpc.organizations.list.useQuery({});
   const users = trpc.security.listUsersBasic.useQuery();
   const me = trpc.me.useQuery();
   const [type, setType] = useState<"internal" | "delivery" | "support" | "sales_followup">("internal");
   const [title, setTitle] = useState("");
-  const [organizationId, setOrganizationId] = useState("");
+  const [description, setDescription] = useState("");
+  const [organizationId, setOrganizationId] = useState(defaultOrgId ?? "");
 
   const [priority, setPriority] = useState("p3");
   const [dueAt, setDueAt] = useState("");
@@ -72,6 +73,7 @@ export function NewStandaloneTaskModal({ onClose }: { onClose: () => void }) {
         e.preventDefault();
         create.mutate({
           type, title, priority: priority as never,
+          description: description.trim() || undefined,
           organizationId: organizationId || undefined,
           assigneeId: effectiveAssignee || undefined,
           dueAt: dueAt ? new Date(`${dueAt}T17:00:00`).toISOString() : undefined,
@@ -80,6 +82,8 @@ export function NewStandaloneTaskModal({ onClose }: { onClose: () => void }) {
       }}>
         <div><label className={fieldLabel}>Název *</label>
           <input className={fieldInput} value={title} onChange={(e) => setTitle(e.target.value)} required autoFocus /></div>
+        <div><label className={fieldLabel}>Popis</label>
+          <textarea className={fieldInput + " min-h-20 resize-y"} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Detaily úkolu, kontext, kroky…" /></div>
         <div className="grid gap-3 sm:grid-cols-2">
           <div><label className={fieldLabel}>Typ</label>
             <Select value={type} onChange={(v) => setType(v as never)}

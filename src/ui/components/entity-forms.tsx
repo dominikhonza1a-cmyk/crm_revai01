@@ -153,6 +153,7 @@ export function NewDocumentModal({ entityType, entityId, onClose }: { entityType
 export function NewTaskModal({ projectId, onClose }: { projectId: string; onClose: () => void }) {
   const utils = trpc.useUtils();
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("p3");
   const [dueAt, setDueAt] = useState("");
   const create = trpc.tasks.create.useMutation({
@@ -165,11 +166,14 @@ export function NewTaskModal({ projectId, onClose }: { projectId: string; onClos
         e.preventDefault();
         create.mutate({
           type: "delivery", title, projectId,
+          description: description.trim() || undefined,
           priority: priority as never,
           dueAt: dueAt ? new Date(`${dueAt}T17:00:00`).toISOString() : undefined,
         });
       }}>
         <div><label className={fieldLabel}>Název *</label><input className={fieldInput} value={title} onChange={(e) => setTitle(e.target.value)} required autoFocus /></div>
+        <div><label className={fieldLabel}>Popis</label>
+          <textarea className={fieldInput + " min-h-20 resize-y"} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Detaily úkolu, kontext…" /></div>
         <div className="grid grid-cols-2 gap-3">
           <div><label className={fieldLabel}>Priorita</label>
             <Select value={priority} onChange={setPriority}

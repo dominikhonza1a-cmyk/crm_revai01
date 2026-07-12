@@ -9,15 +9,17 @@ import { TimelineTab, DocumentsTab } from "@/ui/components/entity-tabs";
 import { NewContactModal } from "@/ui/components/entity-forms";
 import { TagPicker } from "@/ui/components/tag-picker";
 import { CustomFieldsCard } from "@/ui/components/custom-fields-card";
-import { EditClientModal } from "@/ui/components/edit-modals";
-import { EditContactModal } from "@/ui/components/edit-contact-task";
-import { NewProjectModal } from "@/ui/components/new-entity-modals";
+import { EditClientModal, EditDealModal } from "@/ui/components/edit-modals";
+import { EditContactModal, EditTaskModal } from "@/ui/components/edit-contact-task";
+import { NewProjectModal, NewStandaloneTaskModal } from "@/ui/components/new-entity-modals";
+import { TaskStatusSelect } from "@/ui/components/entity-forms";
 
 import { LIFECYCLE_META } from "@/domain/enums";
 const TABS = [
-  { key: "overview", label: "Přehled" }, { key: "projects", label: "Projekty" }, { key: "contacts", label: "Kontakty" },
-  { key: "timeline", label: "Timeline" }, { key: "documents", label: "Dokumenty" }, { key: "deals", label: "Dealy" },
+  { key: "overview", label: "Přehled" }, { key: "projects", label: "Projekty" }, { key: "tasks", label: "Úkoly" },
+  { key: "contacts", label: "Kontakty" }, { key: "timeline", label: "Timeline" }, { key: "documents", label: "Dokumenty" }, { key: "deals", label: "Dealy" },
 ];
+
 
 export default function ClientDetailPage() {
   const orgId = useParams().orgId as string;
@@ -57,6 +59,7 @@ export default function ClientDetailPage() {
         </div>
       )}
       {tab === "projects" && <ProjectsTab orgId={orgId} />}
+      {tab === "tasks" && <TasksTab orgId={orgId} />}
       {tab === "contacts" && <ContactsTab orgId={orgId} />}
       {tab === "timeline" && <TimelineTab entityType="organization" entityId={orgId} />}
       {tab === "documents" && <DocumentsTab entityType="organization" entityId={orgId} />}
@@ -116,9 +119,52 @@ function ContactsTab({ orgId }: { orgId: string }) {
 
 function DealsTab({ orgId }: { orgId: string }) {
   const q = trpc.deals.list.useQuery({ organizationId: orgId });
+  const [editId, setEditId] = useState<string | null>(null);
   if (q.isLoading || !q.data) return <Loading />;
-  if (!q.data.items.length) return <Empty>Žádné dealy</Empty>;
-  return <Card className="p-0 overflow-hidden"><ul className="divide-y divide-line">{q.data.items.map((d) => (
-    <li key={d.id} className="flex items-center justify-between px-4 py-3"><span className="text-ink">{d.title}</span><span className="text-sm text-muted">{d.amountMinor != null ? money(d.amountMinor, d.currency ?? "Kč") : "—"}</span></li>
-  ))}</ul></Card>;
+  if (!q.data.items.length) return <Empty>Žádné dealy — vytvoř přes „+ Nový" nahoře, nebo v sekci Obchod.</Empty>;
+  return (
+    <>
+      <Card className="p-0 overflow-hidden"><ul className="divide-y divide-line">{q.data.items.map((d) => (
+        <li key={d.id} className="flex cursor-pointer items-center justify-between px-4 py-3 transition-colors hover:bg-white/5"
+          title="Klik = upravit deal" onClick={() => setEditId(d.id)}>
+          <span className="text-ink">{d.title} <span className="text-xs text-faint">✎</span></span>
+          <span className="text-sm text-muted">{d.amountMinor != null ? money(d.amountMinor, d.currency ?? "Kč") : "—"}</span>
+        </li>
+      ))}</ul></Card>
+      {editId && <EditDealModal dealId={editId} onClose={() => setEditId(null)} />}
+    </>
+  );
+}
+
+/** Úkoly klienta — prolinkované (filtr organizationId), s tvorbou a editací. */
+function TasksTab({ orgId }: { orgId: string }) {
+  const q = trpc.tasks.list.useQuery({ organizationId: orgId, view: "all" });
+  const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<null | { id: string; title: string; priority: string; dueAt: Date | string | null; assigneeId: string | null; description?: string | null }>(null);
+  if (q.isLoading || !q.data) return <Loading />;
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <button className="rounded-xl border border-line px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent/40 hover:text-accent" onClick={() => setCreating(true)}>+ Nový úkol</button>
+      </div>
+      {!q.data.items.length ? <Empty doodle="/doodles/checklist.svg">Zatím žádné úkoly u tohoto klienta</Empty> : (
+        <Card className="overflow-hidden p-0"><ul className="divide-y divide-line">{q.data.items.map((t) => (
+          <li key={t.id} className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-white/5">
+            <div className="min-w-0 flex-1 cursor-pointer" title="Klik = upravit úkol"
+              onClick={() => setEditing({ id: t.id, title: t.title, priority: t.priority, dueAt: t.dueAt, assigneeId: t.assigneeId ?? null, description: (t as { description?: string | null }).description })}>
+              <div className="truncate text-sm text-ink">{t.title} <span className="text-xs text-faint">✎</span></div>
+              <div className="mt-0.5 flex items-center gap-2 text-xs text-faint">
+                {t.type === "support" && <Badge tone="blue">ticket</Badge>}
+                <span className="uppercase">{t.priority}</span>
+                {t.dueAt && <span>· do {new Date(t.dueAt).toLocaleDateString("cs-CZ")}</span>}
+              </div>
+            </div>
+            <TaskStatusSelect taskId={t.id} status={t.status} />
+          </li>
+        ))}</ul></Card>
+      )}
+      {creating && <NewStandaloneTaskModal defaultOrgId={orgId} onClose={() => setCreating(false)} />}
+      {editing && <EditTaskModal task={editing} onClose={() => setEditing(null)} />}
+    </div>
+  );
 }
