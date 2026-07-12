@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/ui/trpc";
 import { Modal, fieldInput, fieldLabel, btnPrimary, btnGhost, formatError } from "./ui";
+import { ConfirmDeleteModal } from "./confirm-delete";
 
 /** Editace stávajícího klienta (název, web, odvětví, velikost, stav vztahu). */
 export function EditClientModal({ org, onClose }: {
@@ -13,6 +14,7 @@ export function EditClientModal({ org, onClose }: {
 }) {
   const utils = trpc.useUtils();
   const router = useRouter();
+  const [confirmDel, setConfirmDel] = useState(false);
   const [name, setName] = useState(org.name);
   const [website, setWebsite] = useState(org.website ?? "");
   const [industry, setIndustry] = useState(org.industry ?? "");
@@ -59,9 +61,11 @@ export function EditClientModal({ org, onClose }: {
         {(update.error || removeOrg.error) && <p className="text-sm text-red-300">{formatError((update.error ?? removeOrg.error)?.message)}</p>}
         <div className="flex items-center justify-between">
           <button type="button" className="text-xs text-red-300 hover:underline" disabled={removeOrg.isPending}
-            onClick={() => { if (confirm(`Smazat klienta „${org.name}" včetně jeho kontaktů, dealů, projektů a úkolů?`)) removeOrg.mutate({ id: org.id }); }}>
+            onClick={() => setConfirmDel(true)}>
             Smazat klienta
           </button>
+          {confirmDel && <ConfirmDeleteModal name={`klienta „${org.name}"`} detail="Smaže se i jeho kontakty, dealy, projekty a úkoly."
+            busy={removeOrg.isPending} onClose={() => setConfirmDel(false)} onConfirm={() => removeOrg.mutate({ id: org.id })} />}
           <div className="flex gap-2">
             <button type="button" className={btnGhost} onClick={onClose}>Zrušit</button>
             <button type="submit" className={btnPrimary} disabled={update.isPending}>{update.isPending ? "Ukládám…" : "Uložit"}</button>
@@ -79,7 +83,10 @@ export function EditDealModal({ dealId, onClose }: { dealId: string; onClose: ()
   const [title, setTitle] = useState<string | null>(null);
   const [amount, setAmount] = useState<string | null>(null);
   const [closeDate, setCloseDate] = useState<string | null>(null);
+  const [notes, setNotes] = useState<string | null>(null);
   const [amountError, setAmountError] = useState<string | null>(null);
+  const [confirmDel, setConfirmDel] = useState(false);
+  const stages = trpc.deals.stages.useQuery();
 
   const update = trpc.deals.update.useMutation({
     onSuccess: async () => { await Promise.all([utils.deals.list.invalidate(), utils.deals.get.invalidate({ id: dealId }), utils.reporting.dashboard.invalidate()]); onClose(); },
@@ -93,6 +100,8 @@ export function EditDealModal({ dealId, onClose }: { dealId: string; onClose: ()
   const titleVal = title ?? d.title;
   const amountVal = amount ?? (d.amountMinor != null ? String(Number(d.amountMinor) / 100) : "");
   const closeVal = closeDate ?? (d.expectedCloseDate ?? "");
+  const notesVal = notes ?? ((d as { notes?: string | null }).notes ?? "");
+  const stageName = stages.data?.find((s) => s.id === d.pipelineStageId)?.name;
 
   return (
     <Modal title="Upravit deal" onClose={onClose}>
@@ -106,24 +115,30 @@ export function EditDealModal({ dealId, onClose }: { dealId: string; onClose: ()
           id: dealId, title: titleVal,
           amountMinor: trimmed ? BigInt(Math.round(n * 100)) : null,   // prázdné = vymazat
           expectedCloseDate: closeVal || null,
+          notes: notesVal.trim() || null,
         });
       }}>
+        {stageName && <div className="flex items-center gap-2 text-xs text-faint">Fáze: <span className="rounded-full bg-accent-soft px-2 py-0.5 text-accent">{stageName}</span> <span>— měníš přetažením na kanbanu</span></div>}
         <div><label className={fieldLabel}>Název *</label><input className={fieldInput} value={titleVal} onChange={(e) => setTitle(e.target.value)} required autoFocus /></div>
         <div className="grid gap-3 sm:grid-cols-2">
           <div><label className={fieldLabel}>Hodnota (Kč)</label><input className={fieldInput} inputMode="decimal" value={amountVal} onChange={(e) => { setAmount(e.target.value); setAmountError(null); }} placeholder="prázdné = bez hodnoty" />
             {amountError && <p className="mt-1 text-xs text-red-300">{amountError}</p>}</div>
           <div><label className={fieldLabel}>Očekávané uzavření</label><input className={fieldInput} type="date" value={closeVal} onChange={(e) => setCloseDate(e.target.value)} /></div>
         </div>
+        <div><label className={fieldLabel}>Poznámky</label>
+          <textarea className={fieldInput + " min-h-24 resize-y"} value={notesVal} onChange={(e) => setNotes(e.target.value)} placeholder="Kontext, dohody, další kroky…" /></div>
         <p className="text-xs text-faint">
-          Fázi měníš přetažením na kanbanu. Poznámky a historie jsou na kartě klienta —{" "}
+          Celá historie jednání (e-maily, schůzky) je na kartě klienta —{" "}
           <Link className="text-accent hover:underline" href={`/clients/${d.organizationId}`} onClick={onClose}>otevřít klienta →</Link>
         </p>
         {(update.error || removeDeal.error) && <p className="text-sm text-red-300">{formatError((update.error ?? removeDeal.error)?.message)}</p>}
         <div className="flex items-center justify-between">
           <button type="button" className="text-xs text-red-300 hover:underline" disabled={removeDeal.isPending}
-            onClick={() => { if (confirm(`Smazat deal „${titleVal}"?`)) removeDeal.mutate({ id: dealId }); }}>
+            onClick={() => setConfirmDel(true)}>
             Smazat deal
           </button>
+          {confirmDel && <ConfirmDeleteModal name={`deal „${titleVal}"`} busy={removeDeal.isPending}
+            onClose={() => setConfirmDel(false)} onConfirm={() => removeDeal.mutate({ id: dealId })} />}
           <div className="flex gap-2">
             <button type="button" className={btnGhost} onClick={onClose}>Zrušit</button>
             <button type="submit" className={btnPrimary} disabled={update.isPending}>{update.isPending ? "Ukládám…" : "Uložit"}</button>

@@ -46,7 +46,7 @@ export default function InboxPage() {
                   return (
                     <li key={e.id}>
                       <button className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/5" onClick={() => setDetail(e)}>
-                        <Badge tone={e.eventType === "email_out" ? "blue" : "green"}>{e.eventType === "email_out" ? "↗ odeslaný" : "↘ přijatý"}</Badge>
+                        <span className="w-24 shrink-0"><Badge tone={e.eventType === "email_out" ? "blue" : "green"}>{e.eventType === "email_out" ? "↗ odeslaný" : "↘ přijatý"}</Badge></span>
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-sm text-ink">{e.title.replace(/^📧 /, "")}</span>
                           <span className="block truncate text-xs text-faint">{pl.snippet || (e.eventType === "email_out" ? `komu: ${pl.to ?? "?"}` : `od: ${pl.from ?? "?"}`)}</span>

@@ -38,6 +38,7 @@ export const deals = pgTable("deal", {
   wonAt: timestamp("won_at", { withTimezone: true }),
   lostAt: timestamp("lost_at", { withTimezone: true }),
   createdProjectId: uuid("created_project_id"),
+  notes: text("notes"),
   customFields: jsonb("custom_fields").notNull().default({}),
   ...auditColumns,
   ...softDelete,

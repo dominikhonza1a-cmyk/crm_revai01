@@ -159,7 +159,7 @@ export function NewTaskModal({ projectId, onClose }: { projectId: string; onClos
   const [priority, setPriority] = useState("p3");
   const [dueAt, setDueAt] = useState("");
   const create = trpc.tasks.create.useMutation({
-    onSuccess: async () => { await utils.tasks.list.invalidate(); onClose(); },
+    onSuccess: async () => { await Promise.all([utils.tasks.list.invalidate(), utils.reporting.todayTasks.invalidate(), utils.reporting.dashboard.invalidate()]); onClose(); },
   });
 
   return (
@@ -231,7 +231,7 @@ const TASK_STATUSES = [
 export function TaskStatusSelect({ taskId, status }: { taskId: string; status: string }) {
   const utils = trpc.useUtils();
   const change = trpc.tasks.changeStatus.useMutation({
-    onSuccess: async () => { await Promise.all([utils.tasks.list.invalidate(), utils.reporting.dashboard.invalidate()]); },
+    onSuccess: async () => { await Promise.all([utils.tasks.list.invalidate(), utils.reporting.dashboard.invalidate(), utils.reporting.todayTasks.invalidate()]); },
   });
   return (
     <select

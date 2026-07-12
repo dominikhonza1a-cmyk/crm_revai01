@@ -21,11 +21,15 @@ export const reportingService = {
    */
   async finance() {
     const ws = currentWorkspaceId();
-    // kurzy ČNB paralelně s DB dotazy (cold instance tak nečeká sériově)
-    const ratesP = czkRates();
-    const projRows = await db().select({ payments: projects.payments })
-      .from(projects).where(and(eq(projects.workspaceId, ws), isNull(projects.deletedAt)));
-    const rates = await ratesP;
+    // Všechny nezávislé dotazy v jedné vlně (kurzy ČNB + platby + předplatná + retainery) —
+    // ušetří ~2 round-tripy na Netlify→Supabase oproti sekvenčnímu awaitu.
+    const [rates, projRows, subRows, retainers] = await Promise.all([
+      czkRates(),
+      db().select({ payments: projects.payments }).from(projects).where(and(eq(projects.workspaceId, ws), isNull(projects.deletedAt))),
+      db().select().from(subscriptions).where(and(eq(subscriptions.workspaceId, ws), isNull(subscriptions.deletedAt))),
+      db().select({ monthly: projects.monthlyAmountMinor }).from(projects).where(and(eq(projects.workspaceId, ws), isNull(projects.deletedAt),
+        eq(projects.engagementType, "retainer"), eq(projects.retainerActive, true), inArray(projects.status, ["active", "draft"]))),
+    ]);
     let wonTotalCzkMinor = 0n;
     const byMonth = new Map<string, bigint>();
     // rozpad příjmů: platba s poznámkou „retainer…" = retainer, jinak jednorázový příjem
@@ -44,8 +48,6 @@ export const reportingService = {
     // Výdaje: fixní předplatná + jednorázové výdaje dle měsíce zaplacení.
     // Fixní náklad se do daného měsíce počítá jen pokud předplatné v tom měsíci UŽ EXISTOVALO
     // (dle created_at) — jinak by přidané předplatné retroaktivně zkreslilo historii grafu.
-    const subRows = await db().select().from(subscriptions)
-      .where(and(eq(subscriptions.workspaceId, ws), isNull(subscriptions.deletedAt)));
     let recurringMonthlyCzkMinor = 0n;
     const oneOffByMonth = new Map<string, bigint>();
     const recurringActive: { fromMonth: string; monthlyCzk: bigint }[] = [];
@@ -84,12 +86,7 @@ export const reportingService = {
     const incomeThisMonth = byMonth.get(thisMonth) ?? 0n;
     const expenseThisMonth = recurringMonthlyCzkMinor + (oneOffByMonth.get(thisMonth) ?? 0n);
 
-    // Měsíční retainery: jen projekty, kde retainer skutečně BĚŽÍ (retainer_active)
-    const retainers = await db().select({ monthly: projects.monthlyAmountMinor })
-      .from(projects)
-      .where(and(eq(projects.workspaceId, ws), isNull(projects.deletedAt),
-        eq(projects.engagementType, "retainer"), eq(projects.retainerActive, true),
-        inArray(projects.status, ["active", "draft"])));
+    // Měsíční retainery: jen běžící (retainer_active) — načteno výše v jedné vlně.
     const retainerMonthlyCzkMinor = retainers.reduce((a, r) => a + (r.monthly ?? 0n), 0n);
     // Cashflow měsíce = OPAKOVANÉ příjmy (běžící retainery) − výdaje měsíce.
     // Záměrně ne skutečné platby — historické jednorázovky by měsíc zkreslily.

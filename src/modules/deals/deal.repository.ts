@@ -76,6 +76,7 @@ export const dealRepository = {
       ...(input.expectedCloseDate !== undefined ? { expectedCloseDate: input.expectedCloseDate } : {}),
       ...(input.ownerId !== undefined ? { ownerId: input.ownerId } : {}),
       ...(input.projectTypeHint !== undefined ? { projectTypeHint: input.projectTypeHint } : {}),
+      ...(input.notes !== undefined ? { notes: input.notes } : {}),
       ...(input.customFields !== undefined ? { customFields: input.customFields } : {}),
       updatedAt: new Date(),
     }).where(and(eq(deals.id, id), eq(deals.workspaceId, ws)));

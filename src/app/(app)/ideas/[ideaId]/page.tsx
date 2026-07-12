@@ -121,29 +121,36 @@ export default function IdeaDetailPage() {
           {contentValue.trim() ? <MarkdownLite text={contentValue} /> : <p className="text-sm text-faint">Prázdné — klikni na „✎ Upravit text".</p>}
         </div>
       ) : (
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+        <div className="rounded-2xl border border-line bg-surface">
+          {/* Sticky toolbar — drží se nahoře i při dlouhém textu */}
+          <div className="sticky top-0 z-10 flex flex-wrap items-center gap-1.5 rounded-t-2xl border-b border-line bg-surface/95 px-3 py-2 text-xs backdrop-blur">
             {([["bold", "B"], ["italic", "I"], ["h1", "H1"], ["h2", "H2"], ["list", "• seznam"], ["link", "odkaz"], ["code", "</>"]] as const).map(([k, l]) => (
               <button key={k} onClick={() => applyFormat(k)}
                 className={`rounded-lg border border-line px-2.5 py-1 text-muted transition-colors hover:border-accent/40 hover:text-accent ${k === "bold" ? "font-bold" : k === "italic" ? "italic" : ""}`}>
                 {l}
               </button>
             ))}
-            <span className="ml-1 text-faint">**tučně** · *kurzíva* · # nadpis · - odrážka · odkazy jsou klikací v režimu čtení</span>
           </div>
-          <textarea
-            ref={textRef}
-            className="min-h-[50vh] w-full resize-none rounded-2xl border border-line bg-surface p-5 text-sm leading-relaxed text-ink outline-none placeholder:text-faint focus:border-accent/40"
-            placeholder="Piš cokoli — poznatky, odkazy, plány… Ukládá se to samo."
-            value={contentValue}
-            onChange={(e) => { setContent(e.target.value); autoGrow(); }} />
+          {/* Psaní vlevo, živý náhled formátování vpravo */}
+          <div className="grid gap-0 lg:grid-cols-2">
+            <textarea
+              ref={textRef}
+              className="min-h-[50vh] w-full resize-none border-b border-line bg-transparent p-5 text-sm leading-relaxed text-ink outline-none placeholder:text-faint lg:border-b-0 lg:border-r"
+              placeholder="Piš cokoli — poznatky, odkazy, plány… Ukládá se to samo. **tučně**, # nadpis, - odrážka."
+              value={contentValue}
+              onChange={(e) => { setContent(e.target.value); autoGrow(); }} />
+            <div className="min-h-[50vh] overflow-auto p-5">
+              <p className="mb-2 text-[10px] uppercase tracking-wide text-faint">Náhled</p>
+              {contentValue.trim() ? <MarkdownLite text={contentValue} /> : <p className="text-sm text-faint">Náhled formátování se ukáže tady.</p>}
+            </div>
+          </div>
         </div>
       )}
 
       {/* Podstránky — jako v Notionu */}
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-sm font-medium text-muted">📄 Podstránky</h2>
+          <h2 className="flex items-center gap-1.5 text-sm font-medium text-muted"><img src="/doodles/page.svg" alt="" width={18} height={18} /> Podstránky</h2>
           <button className="rounded-xl border border-line px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent/40 hover:text-accent"
             disabled={createChild.isPending}
             onClick={() => createChild.mutate({ parentId: ideaId })}>+ Nová podstránka</button>
@@ -156,7 +163,7 @@ export default function IdeaDetailPage() {
               <div key={c.id} className="group relative">
                 <Link href={`/ideas/${c.id}`}
                   className="block rounded-xl border border-line bg-surface px-3.5 py-2.5 pr-8 transition-colors hover:border-accent/40">
-                  <span className="block truncate text-sm text-ink">📄 {c.title}</span>
+                  <span className="flex items-center gap-1.5 truncate text-sm text-ink"><img src="/doodles/page.svg" alt="" width={16} height={16} className="shrink-0" />{c.title}</span>
                   {c.snippet && <span className="block truncate text-xs text-faint">{c.snippet}</span>}
                 </Link>
                 <button className="absolute right-2 top-2 hidden text-xs text-red-300 hover:underline group-hover:block" title="Smazat podstránku"

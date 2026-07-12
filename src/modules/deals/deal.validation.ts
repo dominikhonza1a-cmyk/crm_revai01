@@ -12,6 +12,7 @@ export const dealCreateSchema = z.object({
   expectedCloseDate: z.string().date().optional(),
   ownerId: z.string().uuid().optional(),
   projectTypeHint: z.enum(["chatbot_voicebot", "process_automation", "custom_ai"]).optional(),
+  notes: z.string().max(5000).nullable().optional(),
   customFields: z.record(z.unknown()).optional(),
 });
 

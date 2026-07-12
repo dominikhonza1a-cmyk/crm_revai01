@@ -10,6 +10,7 @@ import { NewTaskModal, TaskStatusSelect } from "@/ui/components/entity-forms";
 import { TagPicker } from "@/ui/components/tag-picker";
 import { CustomFieldsCard } from "@/ui/components/custom-fields-card";
 import { EditTaskModal } from "@/ui/components/edit-contact-task";
+import { ConfirmDeleteModal } from "@/ui/components/confirm-delete";
 import { useEffect, useRef } from "react";
 import { MarkdownLite } from "@/ui/components/markdown-lite";
 
@@ -25,6 +26,7 @@ export default function ProjectDetailPage() {
   const [tab, setTab] = useState("overview");
   const router = useRouter();
   const utils = trpc.useUtils();
+  const [confirmDelProject, setConfirmDelProject] = useState(false);
   const project = trpc.projects.get.useQuery({ id: projectId });
   const phases = trpc.projects.phases.useQuery({ id: projectId });
 
@@ -64,7 +66,9 @@ export default function ProjectDetailPage() {
             onClick={() => changeStatus.mutate({ projectId, toStatus: "active" })}>Obnovit</button>
         )}
         <button className="text-xs text-red-300 hover:underline" disabled={removeProject.isPending}
-          onClick={() => { if (confirm(`Smazat projekt „${p.name}" včetně jeho úkolů?`)) removeProject.mutate({ projectId }); }}>Smazat</button>
+          onClick={() => setConfirmDelProject(true)}>Smazat</button>
+        {confirmDelProject && <ConfirmDeleteModal name={`projekt „${p.name}"`} detail="Smažou se i jeho úkoly."
+          busy={removeProject.isPending} onClose={() => setConfirmDelProject(false)} onConfirm={() => removeProject.mutate({ projectId })} />}
       </div>
 
       {actionError && <div className="rounded-2xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-300">{actionError.message}</div>}
@@ -125,10 +129,18 @@ export default function ProjectDetailPage() {
 
 /** Popis projektu — volné psaní s autosave (jako Nápady), čtení s markdown formátováním. */
 function DescriptionCard({ projectId, initial }: { projectId: string; initial: string }) {
+  const utils = trpc.useUtils();
   const [text, setText] = useState<string | null>(null);
   const [editing, setEditing] = useState(!initial.trim());
   const [saved, setSaved] = useState<"saved" | "saving" | "dirty">("saved");
-  const update = trpc.projects.update.useMutation({ onSuccess: () => setSaved("saved") });
+  // po uložení zapíšeme hodnotu do cache projects.get — jinak by se po přepnutí tabu
+  // karta odmountovala a znovu naseedovala starou hodnotou (text by „zmizel")
+  const update = trpc.projects.update.useMutation({
+    onSuccess: (_d, vars) => {
+      setSaved("saved");
+      utils.projects.get.setData({ id: projectId }, (old) => old ? { ...old, description: vars.description ?? null } : old);
+    },
+  });
   const updateRef = useRef(update.mutate);
   updateRef.current = update.mutate;
   const value = text ?? initial;

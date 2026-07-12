@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Kalendář / diář v doodle stylu -->
+  <g stroke="#F4ECDD" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M11 17 Q11 15 13 15 L51 15 Q53 15 53 17 L53 51 Q53 53 51 53 L13 53 Q11 53 11 51 Z"/>
+    <path d="M11 25 L53 25"/>
+    <path d="M20 10 L20 20"/>
+    <path d="M44 10 L44 20"/>
+  </g>
+  <!-- den zvýrazněný -->
+  <circle cx="24" cy="35" r="3.6" fill="#FFC93C"/>
+  <g stroke="#F4ECDD" stroke-width="2" stroke-linecap="round">
+    <path d="M34 34 L44 34"/>
+    <path d="M20 44 L30 44"/>
+    <path d="M36 44 L44 44"/>
+  </g>
+  <path d="M57 8 L58 11 L61 12 L58 13 L57 16 L56 13 L53 12 L56 11 Z" fill="#7B5EA7"/>
+  <circle cx="8" cy="46" r="1.8" fill="#9CB380"/>
+</svg>

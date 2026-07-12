@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Stránka / podstránka v doodle stylu -->
+  <g stroke="#F4ECDD" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M17 8.5 L38 8.5 L48 19 L48 55 Q48 56 47 56 L18 56 Q17 56 17 55 Z"/>
+    <path d="M37.5 9 L37.5 19 Q37.5 20 38.5 20 L47.5 20"/>
+    <path d="M24 30 L41 30" stroke-width="2.2"/>
+    <path d="M24 37 L41 37" stroke-width="2.2"/>
+    <path d="M24 44 L34 44" stroke-width="2.2"/>
+  </g>
+  <path d="M53 12 L54 15 L57 16 L54 17 L53 20 L52 17 L49 16 L52 15 Z" fill="#FFC93C"/>
+  <circle cx="12" cy="46" r="1.8" fill="#9CB380"/>
+</svg>

@@ -197,7 +197,7 @@ function SubRow({ s, revealed, showPassword, revealPending, onEdit, onRemove, re
           id: s.id, name: s.name, purpose: s.purpose ?? "", email: s.email ?? "", password: "",
           url: s.url ?? "", amount: String(Number(s.amountMinor) / 100), currency: s.currency as never, period: s.period as never, paidOn: s.paidOn ?? new Date().toISOString().slice(0, 10), notes: s.notes ?? "",
         })}>Upravit</button>
-        <button className="ml-2 text-xs text-red-300 hover:underline" disabled={removePending} onClick={() => onRemove(s.id, s.name)}>×</button>
+        <button className="ml-2 rounded-lg px-2 py-1 text-xs text-red-300 transition-colors hover:bg-red-400/10 hover:underline" disabled={removePending} onClick={() => onRemove(s.id, s.name)}>Smazat</button>
       </td>
     </tr>
   );

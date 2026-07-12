@@ -31,7 +31,7 @@ export default function IdeasPage() {
           {list.data.map((i) => (
             <Link key={i.id} href={`/ideas/${i.id}`}>
               <Card className="h-full transition-colors hover:border-accent/40">
-                <h3 className="mb-1 truncate font-medium text-ink">{i.title}{i.childCount > 0 && <span className="ml-2 text-xs font-normal text-faint">📄 {i.childCount}</span>}</h3>
+                <h3 className="mb-1 truncate font-medium text-ink">{i.title}{i.childCount > 0 && <span className="ml-2 inline-flex items-center gap-1 text-xs font-normal text-faint"><img src="/doodles/page.svg" alt="" width={14} height={14} />{i.childCount}</span>}</h3>
                 <p className="line-clamp-3 whitespace-pre-line text-sm text-faint">{i.snippet || "…"}</p>
                 <p className="mt-3 text-xs text-faint">{new Date(i.updatedAt).toLocaleString("cs-CZ")}</p>
               </Card>

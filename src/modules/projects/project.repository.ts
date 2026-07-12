@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { and, eq, isNull, desc } from "drizzle-orm";
+import { and, eq, isNull, desc, getTableColumns } from "drizzle-orm";
 import { db } from "@/shared/db";
 import { currentWorkspaceId } from "@/shared/tenant-context";
 import { clampLimit, type Page } from "@/shared/pagination";
 import { projects, projectPhases, type ProjectRow, type ProjectPhaseRow } from "./project.entity";
+import { organizations } from "@/modules/organizations/organization.entity";
 import type { ProjectListFilter } from "./project.types";
 
 export interface ProjectInsertData {
@@ -25,14 +26,15 @@ export const projectRepository = {
       .where(and(eq(projects.dealId, dealId), eq(projects.workspaceId, ws))).limit(1))[0] ?? null;
   },
 
-  async list(filter: ProjectListFilter, limit?: number): Promise<Page<ProjectRow>> {
+  async list(filter: ProjectListFilter, limit?: number): Promise<Page<ProjectRow & { organizationName: string | null }>> {
     const ws = currentWorkspaceId();
     const conds = [eq(projects.workspaceId, ws), isNull(projects.deletedAt)];
     if (filter.organizationId) conds.push(eq(projects.organizationId, filter.organizationId));
     if (filter.status) conds.push(eq(projects.status, filter.status));
     if (filter.engagementType) conds.push(eq(projects.engagementType, filter.engagementType));
     if (filter.ownerId) conds.push(eq(projects.ownerId, filter.ownerId));
-    const items = await db().select().from(projects)
+    const items = await db().select({ ...getTableColumns(projects), organizationName: organizations.name }).from(projects)
+      .leftJoin(organizations, eq(projects.organizationId, organizations.id))
       .where(and(...conds)).orderBy(desc(projects.createdAt)).limit(clampLimit(limit));
     return { items, nextCursor: null };
   },

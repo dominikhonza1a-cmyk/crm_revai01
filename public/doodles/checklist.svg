@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- To-do / checklist v doodle stylu -->
+  <g stroke="#F4ECDD" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M16 12 L48 12 Q49 12 49 13 L49 53 Q49 54 48 54 L16 54 Q15 54 15 53 L15 13 Q15 12 16 12 Z"/>
+    <!-- odškrtnutý -->
+    <path d="M21 23 L24 26 L29 20" stroke="#FFC93C"/>
+    <path d="M33 23 L43 23"/>
+    <!-- další řádky -->
+    <rect x="21" y="32" width="6" height="6" rx="1.5"/>
+    <path d="M33 35 L43 35"/>
+    <rect x="21" y="42" width="6" height="6" rx="1.5"/>
+    <path d="M33 45 L43 45"/>
+  </g>
+  <path d="M54 9 L55 12 L58 13 L55 14 L54 17 L53 14 L50 13 L53 12 Z" fill="#7B5EA7"/>
+  <circle cx="9" cy="30" r="1.8" fill="#9CB380"/>
+</svg>

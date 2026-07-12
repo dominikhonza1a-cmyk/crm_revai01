@@ -13,6 +13,7 @@ export interface DealCreateInput {
   expectedCloseDate?: string;
   ownerId?: string;
   projectTypeHint?: ProjectType;
+  notes?: string | null;
   customFields?: Record<string, unknown>;
 }
 

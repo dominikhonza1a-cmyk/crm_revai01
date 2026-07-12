@@ -130,7 +130,7 @@ function TodayCard() {
       </SectionTitle>
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-faint">📅 Schůzky</h3>
+          <h3 className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-faint"><img src="/doodles/calendar.svg" alt="" width={20} height={20} /> Schůzky</h3>
           {agenda.error ? <p className="text-sm text-red-300">Kalendář se nepodařilo načíst — zkus <Link href="/settings" className="underline">připojit Google znovu</Link>.</p>
             : agenda.isLoading || !agenda.data ? <p className="text-sm text-faint">Načítám…</p>
             : !agenda.data.connected ? (
@@ -150,7 +150,7 @@ function TodayCard() {
             )}
         </div>
         <div>
-          <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-faint">✅ To-do</h3>
+          <h3 className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-faint"><img src="/doodles/checklist.svg" alt="" width={20} height={20} /> To-do</h3>
           {tasks.error ? <p className="text-sm text-red-300">Úkoly se nepodařilo načíst.</p>
             : tasks.isLoading || !tasks.data ? <p className="text-sm text-faint">Načítám…</p>
             : tasks.data.length === 0 ? <p className="text-sm text-faint">Žádné úkoly do dneška</p>

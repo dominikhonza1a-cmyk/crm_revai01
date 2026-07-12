@@ -69,7 +69,7 @@ export function NewStandaloneTaskModal({ onClose }: { onClose: () => void }) {
   const effectiveAssignee = assigneeId ?? me.data?.userId ?? "";
 
   const create = trpc.tasks.create.useMutation({
-    onSuccess: async () => { await utils.tasks.list.invalidate(); onClose(); },
+    onSuccess: async () => { await Promise.all([utils.tasks.list.invalidate(), utils.reporting.todayTasks.invalidate(), utils.reporting.dashboard.invalidate()]); onClose(); },
   });
 
   return (

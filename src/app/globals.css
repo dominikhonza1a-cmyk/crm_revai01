@@ -25,4 +25,8 @@ body { background-color: var(--color-bg); color: var(--color-ink); }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-thumb { background: #2a3446; border-radius: 8px; }
 
-:root { color-scheme: dark; }
+:root, html { color-scheme: dark; }
+
+/* Nativní dropdowny v našich barvách (rozbalený seznam dědí surface). */
+select { color-scheme: dark; }
+select option { background-color: #182131; color: #e6ecf5; }
