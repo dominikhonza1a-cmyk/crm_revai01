@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { trpc } from "@/ui/trpc";
 import { Modal, fieldInput, fieldLabel, btnPrimary, btnGhost, formatError } from "./ui";
+import { Select } from "./select";
 
 type Host = "organization" | "contact" | "deal" | "project" | "task" | "idea";
 
@@ -101,11 +102,8 @@ export function NewDocumentModal({ entityType, entityId, onClose }: { entityType
       <form className="space-y-4" onSubmit={submit}>
         <div>
           <label className={fieldLabel}>Typ</label>
-          <select className={fieldInput} value={kind} onChange={(e) => setKind(e.target.value as never)}>
-            <option value="native_file">Nahrát soubor (smlouva, dotazník…)</option>
-            <option value="external_ref">Odkaz (Drive / web)</option>
-            <option value="secret_ref">Přístupy — jen odkaz, bez obsahu</option>
-          </select>
+          <Select value={kind} onChange={(v) => setKind(v as never)}
+            options={[{ value: "native_file", label: "Nahrát soubor (smlouva, dotazník…)" }, { value: "external_ref", label: "Odkaz (Drive / web)" }, { value: "secret_ref", label: "Přístupy — jen odkaz, bez obsahu" }]} />
         </div>
 
         {kind === "native_file" && (
@@ -126,9 +124,8 @@ export function NewDocumentModal({ entityType, entityId, onClose }: { entityType
         {kind !== "secret_ref" ? (
           <>
             <div><label className={fieldLabel}>Kategorie</label>
-              <select className={fieldInput} value={docCategory} onChange={(e) => setCategory(e.target.value)}>
-                {DOC_CATEGORIES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-              </select>
+              <Select value={docCategory} onChange={setCategory}
+                options={DOC_CATEGORIES.map(([v, l]) => ({ value: v, label: l }))} />
             </div>
             {docCategory === "other" && (
               <div><label className={fieldLabel}>Upřesni kategorii</label><input className={fieldInput} value={categoryLabel} onChange={(e) => setCategoryLabel(e.target.value)} placeholder="např. předávací protokol" /></div>
@@ -175,9 +172,8 @@ export function NewTaskModal({ projectId, onClose }: { projectId: string; onClos
         <div><label className={fieldLabel}>Název *</label><input className={fieldInput} value={title} onChange={(e) => setTitle(e.target.value)} required autoFocus /></div>
         <div className="grid grid-cols-2 gap-3">
           <div><label className={fieldLabel}>Priorita</label>
-            <select className={fieldInput} value={priority} onChange={(e) => setPriority(e.target.value)}>
-              <option value="p1">P1 — kritická</option><option value="p2">P2 — vysoká</option><option value="p3">P3 — běžná</option><option value="p4">P4 — nízká</option>
-            </select>
+            <Select value={priority} onChange={setPriority}
+              options={[{ value: "p1", label: "P1 — kritická" }, { value: "p2", label: "P2 — vysoká" }, { value: "p3", label: "P3 — běžná" }, { value: "p4", label: "P4 — nízká" }]} />
           </div>
           <div><label className={fieldLabel}>Termín</label><input className={fieldInput} type="date" value={dueAt} onChange={(e) => setDueAt(e.target.value)} /></div>
         </div>
@@ -234,14 +230,9 @@ export function TaskStatusSelect({ taskId, status }: { taskId: string; status: s
     onSuccess: async () => { await Promise.all([utils.tasks.list.invalidate(), utils.reporting.dashboard.invalidate(), utils.reporting.todayTasks.invalidate()]); },
   });
   return (
-    <select
-      className="rounded-lg border border-line bg-surface-2 px-2 py-1 text-xs text-ink outline-none focus:border-accent"
-      value={status}
-      disabled={change.isPending}
-      onClick={(e) => e.stopPropagation()}
-      onChange={(e) => change.mutate({ taskId, toStatus: e.target.value as never })}
-    >
-      {TASK_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-    </select>
+    <div className="w-40 shrink-0" onClick={(e) => e.stopPropagation()}>
+      <Select value={status} onChange={(v) => change.mutate({ taskId, toStatus: v as never })}
+        options={TASK_STATUSES.map((s) => ({ value: s.value, label: s.label }))} />
+    </div>
   );
 }

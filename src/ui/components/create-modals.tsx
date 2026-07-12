@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { trpc } from "@/ui/trpc";
+import { Select } from "./select";
+import { LIFECYCLE_OPTIONS } from "@/domain/enums";
 import { Modal, fieldInput, fieldLabel, btnPrimary, btnGhost, formatError } from "./ui";
 
 /** Nový klient. */
@@ -22,9 +24,7 @@ export function NewClientModal({ onClose }: { onClose: () => void }) {
         <div><label className={fieldLabel}>Web</label><input className={fieldInput} value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="www.firma.cz (https:// doplníme)" /></div>
         <div className="grid grid-cols-2 gap-3">
           <div><label className={fieldLabel}>Stav</label>
-            <select className={fieldInput} value={lifecycleStage} onChange={(e) => setStage(e.target.value)}>
-              <option value="prospect">Prospekt</option><option value="active_client">Klient</option><option value="past_client">Bývalý</option><option value="partner">Partner</option>
-            </select>
+<Select value={lifecycleStage} onChange={setStage} options={LIFECYCLE_OPTIONS} />
           </div>
           <div><label className={fieldLabel}>Odvětví</label><input className={fieldInput} value={industry} onChange={(e) => setIndustry(e.target.value)} /></div>
         </div>
@@ -62,18 +62,15 @@ export function NewDealModal({ onClose }: { onClose: () => void }) {
         });
       }}>
         <div><label className={fieldLabel}>Klient *</label>
-          <select className={fieldInput} value={organizationId} onChange={(e) => setOrg(e.target.value)} required>
-            <option value="" disabled>Vyber klienta…</option>
-            {orgs.data?.items.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-          </select>
+          <Select value={organizationId} onChange={setOrg} placeholder="— vyber klienta —"
+            options={(orgs.data?.items ?? []).map((o: { id: string; name: string }) => ({ value: o.id, label: o.name }))} />
         </div>
         <div><label className={fieldLabel}>Název *</label><input className={fieldInput} value={title} onChange={(e) => setTitle(e.target.value)} required /></div>
         <div className="grid grid-cols-2 gap-3">
           <div><label className={fieldLabel}>Hodnota (Kč)</label><input className={fieldInput} value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" placeholder="250000" /></div>
           <div><label className={fieldLabel}>Typ projektu</label>
-            <select className={fieldInput} value={projectTypeHint} onChange={(e) => setType(e.target.value)}>
-              <option value="">—</option><option value="chatbot_voicebot">Chatbot/Voicebot</option><option value="process_automation">Automatizace</option><option value="custom_ai">Custom AI</option>
-            </select>
+            <Select value={projectTypeHint} onChange={setType}
+              options={[{ value: "chatbot_voicebot", label: "Chatbot / Voicebot" }, { value: "process_automation", label: "Automatizace" }, { value: "custom_ai", label: "Custom AI" }]} />
           </div>
         </div>
         {create.error && <p className="text-sm text-red-300">{formatError(create.error.message)}</p>}

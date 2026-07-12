@@ -13,10 +13,7 @@ import { EditClientModal } from "@/ui/components/edit-modals";
 import { EditContactModal } from "@/ui/components/edit-contact-task";
 import { NewProjectModal } from "@/ui/components/new-entity-modals";
 
-const LIFECYCLE: Record<string, { label: string; tone: "slate" | "green" | "amber" | "blue" }> = {
-  prospect: { label: "Prospekt", tone: "blue" }, active_client: { label: "Klient", tone: "green" },
-  past_client: { label: "Bývalý", tone: "slate" }, partner: { label: "Partner", tone: "amber" },
-};
+import { LIFECYCLE_META } from "@/domain/enums";
 const TABS = [
   { key: "overview", label: "Přehled" }, { key: "projects", label: "Projekty" }, { key: "contacts", label: "Kontakty" },
   { key: "timeline", label: "Timeline" }, { key: "documents", label: "Dokumenty" }, { key: "deals", label: "Dealy" },
@@ -31,7 +28,7 @@ export default function ClientDetailPage() {
   if (org.isLoading) return <Loading />;
   if (!org.data) return <Empty>Klient nenalezen</Empty>;
   const o = org.data;
-  const lc = LIFECYCLE[o.lifecycleStage];
+  const lc = LIFECYCLE_META[o.lifecycleStage];
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">

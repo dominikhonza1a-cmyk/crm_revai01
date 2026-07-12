@@ -5,6 +5,7 @@ import Link from "next/link";
 import { trpc } from "@/ui/trpc";
 import { Loading, Empty, Modal, btnPrimary, btnGhost, fieldInput, fieldLabel } from "@/ui/components/ui";
 import { KanbanBoard, type KanbanStage } from "@/ui/components/kanban";
+import { Select } from "@/ui/components/select";
 import { EditDealModal } from "@/ui/components/edit-modals";
 
 const LOST_REASONS = [
@@ -106,9 +107,8 @@ export default function DealsPage() {
             <p className="text-sm text-muted">Deal <span className="font-medium text-ink">„{pending.dealTitle}"</span> — vyber důvod prohry:</p>
             <div>
               <label className={fieldLabel}>Důvod *</label>
-              <select className={fieldInput} value={lostReason} onChange={(e) => setLostReason(e.target.value as typeof lostReason)}>
-                {LOST_REASONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-              </select>
+              <Select value={lostReason} onChange={(v) => setLostReason(v as typeof lostReason)}
+                options={LOST_REASONS.map((r) => ({ value: r.value, label: r.label }))} />
             </div>
             <div>
               <label className={fieldLabel}>Poznámka</label>

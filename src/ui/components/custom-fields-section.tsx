@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { trpc } from "@/ui/trpc";
 import { Card, SectionTitle, Badge, Modal, fieldInput, fieldLabel, btnPrimary, btnGhost, formatError } from "./ui";
+import { Select } from "./select";
 
 const ENTITY_LABEL: Record<string, string> = { organization: "Klient", deal: "Deal", project: "Projekt" };
 const TYPE_LABEL: Record<string, string> = { text: "Text", number: "Číslo", date: "Datum", select: "Výběr", url: "Odkaz" };
@@ -56,16 +57,14 @@ export function CustomFieldsSection() {
             create.mutate({ entityType, label, fieldType, options: fieldType === "select" ? options.split(",").map((o) => o.trim()).filter(Boolean) : undefined });
           }}>
             <div><label className={fieldLabel}>Kde *</label>
-              <select className={fieldInput} value={entityType} onChange={(e) => setEntityType(e.target.value as never)}>
-                <option value="organization">Klient</option><option value="deal">Deal</option><option value="project">Projekt</option>
-              </select>
+              <Select value={entityType} onChange={(v) => setEntityType(v as never)}
+                options={[{ value: "organization", label: "Klient" }, { value: "deal", label: "Deal" }, { value: "project", label: "Projekt" }]} />
             </div>
             <div><label className={fieldLabel}>Název pole *</label>
               <input className={fieldInput} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="např. IČO" required autoFocus /></div>
             <div><label className={fieldLabel}>Typ</label>
-              <select className={fieldInput} value={fieldType} onChange={(e) => setFieldType(e.target.value as never)}>
-                {Object.entries(TYPE_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-              </select>
+              <Select value={fieldType} onChange={(v) => setFieldType(v as never)}
+                options={Object.entries(TYPE_LABEL).map(([v, l]) => ({ value: v, label: l }))} />
             </div>
             {fieldType === "select" && (
               <div><label className={fieldLabel}>Možnosti (oddělené čárkou) *</label>

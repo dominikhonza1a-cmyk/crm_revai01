@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { trpc } from "@/ui/trpc";
 import { Modal, fieldInput, fieldLabel, btnPrimary, btnGhost, formatError } from "./ui";
+import { Select } from "./select";
 
 /** Editace kontaktu (jméno, e-mail, telefon, pozice) + smazání. */
 export function EditContactModal({ contact, onClose }: {
@@ -85,15 +86,11 @@ export function EditTaskModal({ task, onClose }: {
         <div><label className={fieldLabel}>Název *</label><input className={fieldInput} value={title} onChange={(e) => setTitle(e.target.value)} required autoFocus /></div>
         <div className="grid gap-3 sm:grid-cols-3">
           <div><label className={fieldLabel}>Priorita</label>
-            <select className={fieldInput} value={priority} onChange={(e) => setPriority(e.target.value)}>
-              {PRIORITY.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select></div>
+            <Select value={priority} onChange={setPriority} options={PRIORITY.map(([v, l]) => ({ value: v, label: l }))} /></div>
           <div><label className={fieldLabel}>Termín</label><input className={fieldInput} type="date" value={dueAt} onChange={(e) => setDueAt(e.target.value)} /></div>
           <div><label className={fieldLabel}>Řešitel</label>
-            <select className={fieldInput} value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}>
-              <option value="">— nikdo —</option>
-              {(users.data ?? []).map((u) => <option key={u.id} value={u.id}>{u.fullName}</option>)}
-            </select></div>
+            <Select value={assigneeId} onChange={setAssigneeId} placeholder="— nikdo —"
+              options={[{ value: "", label: "— nikdo —" }, ...(users.data ?? []).map((u) => ({ value: u.id, label: u.fullName }))]} /></div>
         </div>
         <div><label className={fieldLabel}>Popis</label>
           <textarea className={fieldInput + " min-h-20 resize-y"} value={description} onChange={(e) => setDescription(e.target.value)} /></div>

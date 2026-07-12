@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { trpc } from "@/ui/trpc";
 import { Card, SectionTitle, Badge, Modal, Loading, Empty, money, fieldInput, fieldLabel, btnPrimary, btnGhost, formatError } from "@/ui/components/ui";
+import { Select } from "@/ui/components/select";
 
 type EditState = { id?: string; name: string; purpose: string; email: string; password: string; url: string; amount: string; currency: "USD" | "EUR" | "CZK" | "GBP"; period: "monthly" | "yearly" | "one_off"; paidOn: string; notes: string } | null;
 
@@ -125,13 +126,11 @@ export default function SubscriptionsPage() {
               <div><label className={fieldLabel}>Částka *</label><input className={fieldInput} inputMode="decimal" value={edit.amount} onChange={(e) => setEdit({ ...edit, amount: e.target.value })} placeholder="20" required /></div>
               <div className="grid grid-cols-2 gap-2">
                 <div><label className={fieldLabel}>Měna</label>
-                  <select className={fieldInput} value={edit.currency} onChange={(e) => setEdit({ ...edit, currency: e.target.value as never })}>
-                    <option>USD</option><option>EUR</option><option>CZK</option><option>GBP</option>
-                  </select></div>
+                  <Select value={edit.currency} onChange={(v) => setEdit({ ...edit, currency: v as never })}
+                    options={[{ value: "USD", label: "USD" }, { value: "EUR", label: "EUR" }, { value: "CZK", label: "CZK" }, { value: "GBP", label: "GBP" }]} /></div>
                 <div><label className={fieldLabel}>Období</label>
-                  <select className={fieldInput} value={edit.period} onChange={(e) => setEdit({ ...edit, period: e.target.value as never })}>
-                    <option value="monthly">měsíčně</option><option value="yearly">ročně</option><option value="one_off">jednorázově</option>
-                  </select></div>
+                  <Select value={edit.period} onChange={(v) => setEdit({ ...edit, period: v as never })}
+                    options={[{ value: "monthly", label: "měsíčně" }, { value: "yearly", label: "ročně" }, { value: "one_off", label: "jednorázově" }]} /></div>
               </div>
               {edit.period === "one_off" && (
                 <div><label className={fieldLabel}>Zaplaceno dne *</label>

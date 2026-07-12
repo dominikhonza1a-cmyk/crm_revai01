@@ -6,6 +6,13 @@ import { useRouter } from "next/navigation";
 import { trpc } from "@/ui/trpc";
 import { Modal, fieldInput, fieldLabel, btnPrimary, btnGhost, formatError } from "./ui";
 import { ConfirmDeleteModal } from "./confirm-delete";
+import { Select } from "./select";
+import { LIFECYCLE_OPTIONS } from "@/domain/enums";
+
+const BAND_OPTIONS = [
+  { value: "", label: "—" }, { value: "1_49", label: "1–49" }, { value: "50_199", label: "50–199" },
+  { value: "200_500", label: "200–500" }, { value: "500_plus", label: "500+" },
+];
 
 /** Editace stávajícího klienta (název, web, odvětví, velikost, stav vztahu). */
 export function EditClientModal({ org, onClose }: {
@@ -48,15 +55,9 @@ export function EditClientModal({ org, onClose }: {
           <div><label className={fieldLabel}>Odvětví</label><input className={fieldInput} value={industry} onChange={(e) => setIndustry(e.target.value)} placeholder="zdravotnictví…" /></div>
           <div><label className={fieldLabel}>Zdroj</label><input className={fieldInput} value={source} onChange={(e) => setSource(e.target.value)} placeholder="doporučení, web, kampaň…" /></div>
           <div><label className={fieldLabel}>Velikost</label>
-            <select className={fieldInput} value={employeeBand} onChange={(e) => setEmployeeBand(e.target.value)}>
-              <option value="">—</option><option value="1_49">1–49</option><option value="50_199">50–199</option>
-              <option value="200_500">200–500</option><option value="500_plus">500+</option>
-            </select></div>
+            <Select value={employeeBand} onChange={setEmployeeBand} options={BAND_OPTIONS} /></div>
           <div><label className={fieldLabel}>Stav vztahu</label>
-            <select className={fieldInput} value={lifecycle} onChange={(e) => setLifecycle(e.target.value)}>
-              <option value="prospect">Prospekt</option><option value="active_client">Aktivní klient</option>
-              <option value="past_client">Bývalý klient</option><option value="partner">Partner</option>
-            </select></div>
+            <Select value={lifecycle} onChange={setLifecycle} options={LIFECYCLE_OPTIONS} /></div>
         </div>
         {(update.error || removeOrg.error) && <p className="text-sm text-red-300">{formatError((update.error ?? removeOrg.error)?.message)}</p>}
         <div className="flex items-center justify-between">

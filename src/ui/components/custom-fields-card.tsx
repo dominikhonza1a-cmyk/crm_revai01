@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { trpc } from "@/ui/trpc";
 import { Card, SectionTitle, formatError } from "./ui";
+import { Select } from "./select";
 
 type EntityType = "organization" | "deal" | "project";
 
@@ -38,11 +39,8 @@ export function CustomFieldsCard({ entityType, entityId, values }: { entityType:
             <span className="flex items-center gap-2">
               {savedKey === d.key && <span className="text-xs text-accent">✓</span>}
               {d.fieldType === "select" ? (
-                <select className={input} value={valueOf(d.key)}
-                  onChange={(e) => { setLocal((l) => ({ ...l, [d.key]: e.target.value })); set.mutate({ entityType, entityId, key: d.key, value: e.target.value || null }); }}>
-                  <option value="">—</option>
-                  {((d.options as string[]) ?? []).map((o) => <option key={o} value={o}>{o}</option>)}
-                </select>
+                <Select value={valueOf(d.key)} onChange={(v) => { setLocal((l) => ({ ...l, [d.key]: v })); set.mutate({ entityType, entityId, key: d.key, value: v || null }); }}
+                  options={[{ value: "", label: "—" }, ...((d.options as string[]) ?? []).map((o) => ({ value: o, label: o }))]} className="w-52" />
               ) : (
                 <input className={input}
                   type={d.fieldType === "number" ? "number" : d.fieldType === "date" ? "date" : "text"}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { trpc } from "@/ui/trpc";
 import { Card, SectionTitle, Badge, Modal, fieldInput, fieldLabel, btnPrimary, btnGhost, formatError } from "./ui";
+import { Select } from "./select";
 
 const ROLES = [
   { value: "admin", label: "Admin" },
@@ -84,9 +85,8 @@ export function UsersSection() {
             <div><label className={fieldLabel}>Jméno *</label><input className={fieldInput} value={fullName} onChange={(e) => setFullName(e.target.value)} required autoFocus /></div>
             <div><label className={fieldLabel}>E-mail *</label><input className={fieldInput} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
             <div><label className={fieldLabel}>Role</label>
-              <select className={fieldInput} value={roleKey} onChange={(e) => setRoleKey(e.target.value as never)}>
-                {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-              </select>
+              <Select value={roleKey} onChange={(v) => setRoleKey(v as never)}
+                options={ROLES.map((r) => ({ value: r.value, label: r.label }))} />
             </div>
             <p className="text-xs text-faint">Kolegovi přijde pozvánkový e-mail — přihlásí se přes odkaz a v Nastavení si může zapnout MFA.</p>
             {invite.error && <p className="text-sm text-red-300">{formatError(invite.error.message)}</p>}

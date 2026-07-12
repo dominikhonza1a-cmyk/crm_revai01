@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/ui/trpc";
 import { Modal, fieldInput, fieldLabel, btnPrimary, btnGhost, formatError } from "./ui";
+import { Select } from "./select";
 
 /** Ruční založení projektu (Won → projekt zůstává automatika; tohle je pro retainery/ad-hoc). */
 export function NewProjectModal({ onClose, defaultOrgId }: { onClose: () => void; defaultOrgId?: string }) {
@@ -23,24 +24,17 @@ export function NewProjectModal({ onClose, defaultOrgId }: { onClose: () => void
     <Modal title="Nový projekt" onClose={onClose}>
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); create.mutate({ organizationId, name, projectType, engagementType }); }}>
         <div><label className={fieldLabel}>Klient *</label>
-          <select className={fieldInput} value={organizationId} onChange={(e) => setOrganizationId(e.target.value)} required>
-            <option value="">— vyber klienta —</option>
-            {(orgs.data?.items ?? []).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-          </select></div>
+          <Select value={organizationId} onChange={setOrganizationId} placeholder="— vyber klienta —"
+            options={(orgs.data?.items ?? []).map((o) => ({ value: o.id, label: o.name }))} /></div>
         <div><label className={fieldLabel}>Název projektu *</label>
           <input className={fieldInput} value={name} onChange={(e) => setName(e.target.value)} placeholder="Hlasový asistent" required /></div>
         <div className="grid gap-3 sm:grid-cols-2">
           <div><label className={fieldLabel}>Typ</label>
-            <select className={fieldInput} value={projectType} onChange={(e) => setProjectType(e.target.value as never)}>
-              <option value="chatbot_voicebot">Chatbot / Voicebot</option>
-              <option value="process_automation">Automatizace</option>
-              <option value="custom_ai">Custom AI</option>
-            </select></div>
+            <Select value={projectType} onChange={(v) => setProjectType(v as never)}
+              options={[{ value: "chatbot_voicebot", label: "Chatbot / Voicebot" }, { value: "process_automation", label: "Automatizace" }, { value: "custom_ai", label: "Custom AI" }]} /></div>
           <div><label className={fieldLabel}>Zakázka</label>
-            <select className={fieldInput} value={engagementType} onChange={(e) => setEngagementType(e.target.value as never)}>
-              <option value="one_off">Jednorázová</option>
-              <option value="retainer">Retainer</option>
-            </select></div>
+            <Select value={engagementType} onChange={(v) => setEngagementType(v as never)}
+              options={[{ value: "one_off", label: "Jednorázová" }, { value: "retainer", label: "Retainer" }]} /></div>
         </div>
         <p className="text-xs text-faint">Cena, platby a retainer se vyplňují na kartě projektu (sekce Finance).</p>
         {create.error && <p className="text-sm text-red-300">{formatError(create.error.message)}</p>}
@@ -88,29 +82,19 @@ export function NewStandaloneTaskModal({ onClose }: { onClose: () => void }) {
           <input className={fieldInput} value={title} onChange={(e) => setTitle(e.target.value)} required autoFocus /></div>
         <div className="grid gap-3 sm:grid-cols-2">
           <div><label className={fieldLabel}>Typ</label>
-            <select className={fieldInput} value={type} onChange={(e) => setType(e.target.value as never)}>
-              <option value="internal">Interní úkol</option>
-              <option value="delivery">Dodávka (projekt)</option>
-              <option value="support">Ticket podpory (SLA)</option>
-              <option value="sales_followup">Obchodní follow-up</option>
-            </select></div>
+            <Select value={type} onChange={(v) => setType(v as never)}
+              options={[{ value: "internal", label: "Interní úkol" }, { value: "delivery", label: "Dodávka (projekt)" }, { value: "support", label: "Ticket podpory (SLA)" }, { value: "sales_followup", label: "Obchodní follow-up" }]} /></div>
           <div><label className={fieldLabel}>Priorita</label>
-            <select className={fieldInput} value={priority} onChange={(e) => setPriority(e.target.value)}>
-              <option value="p1">P1 — kritická</option><option value="p2">P2 — vysoká</option>
-              <option value="p3">P3 — běžná</option><option value="p4">P4 — nízká</option>
-            </select></div>
+            <Select value={priority} onChange={setPriority}
+              options={[{ value: "p1", label: "P1 — kritická" }, { value: "p2", label: "P2 — vysoká" }, { value: "p3", label: "P3 — běžná" }, { value: "p4", label: "P4 — nízká" }]} /></div>
           <div><label className={fieldLabel}>Klient</label>
-            <select className={fieldInput} value={organizationId} onChange={(e) => setOrganizationId(e.target.value)}>
-              <option value="">—</option>
-              {(orgs.data?.items ?? []).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-            </select></div>
+            <Select value={organizationId} onChange={setOrganizationId} placeholder="—"
+              options={[{ value: "", label: "—" }, ...(orgs.data?.items ?? []).map((o) => ({ value: o.id, label: o.name }))]} /></div>
           <div><label className={fieldLabel}>Termín</label>
             <input className={fieldInput} type="date" value={dueAt} onChange={(e) => setDueAt(e.target.value)} /></div>
           <div><label className={fieldLabel}>Řešitel</label>
-            <select className={fieldInput} value={effectiveAssignee} onChange={(e) => setAssigneeId(e.target.value)}>
-              <option value="">— nikdo —</option>
-              {(users.data ?? []).map((u) => <option key={u.id} value={u.id}>{u.fullName}</option>)}
-            </select></div>
+            <Select value={effectiveAssignee} onChange={setAssigneeId} placeholder="— nikdo —"
+              options={[{ value: "", label: "— nikdo —" }, ...(users.data ?? []).map((u) => ({ value: u.id, label: u.fullName }))]} /></div>
         </div>
         {type === "support" && <p className="text-xs text-faint">Ticket automaticky spustí SLA měřidla dle tieru klienta.</p>}
         {create.error && <p className="text-sm text-red-300">{formatError(create.error.message)}</p>}

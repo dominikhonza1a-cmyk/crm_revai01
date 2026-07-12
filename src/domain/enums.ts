@@ -3,7 +3,10 @@
  * Číselníky, které se mění za provozu (PipelineStage, ProjectTemplate, SLAPolicy, Tag), jsou naopak řádky v DB.
  */
 
-export const LifecycleStage = ["prospect", "active_client", "past_client", "partner"] as const;
+export const LifecycleStage = [
+  "new_contact", "prospect", "meeting", "negotiating", "before_signature",
+  "active_client", "on_hold", "past_client", "partner",
+] as const;
 export type LifecycleStage = (typeof LifecycleStage)[number];
 
 export const EmployeeBand = ["1_49", "50_199", "200_500", "500_plus"] as const;
@@ -69,3 +72,17 @@ export type TaggableEntity = (typeof TaggableEntity)[number];
 
 export const TimelineHostEntity = ["organization", "contact", "deal", "project", "task", "idea"] as const;
 export type TimelineHostEntity = (typeof TimelineHostEntity)[number];
+
+/** Stav vztahu ke klientovi — od prvního kontaktu po uzavření (label + tón pro badge). */
+export const LIFECYCLE_META: Record<string, { label: string; tone: "slate" | "green" | "amber" | "blue" | "red" }> = {
+  new_contact: { label: "Nový kontakt", tone: "blue" },
+  prospect: { label: "Prospekt", tone: "blue" },
+  meeting: { label: "Před schůzkou", tone: "amber" },
+  negotiating: { label: "V jednání / čekáme", tone: "amber" },
+  before_signature: { label: "Před podpisem", tone: "amber" },
+  active_client: { label: "Aktivní klient", tone: "green" },
+  on_hold: { label: "Pozastaveno", tone: "slate" },
+  past_client: { label: "Bývalý klient", tone: "slate" },
+  partner: { label: "Partner", tone: "green" },
+};
+export const LIFECYCLE_OPTIONS = Object.entries(LIFECYCLE_META).map(([value, m]) => ({ value, label: m.label }));
