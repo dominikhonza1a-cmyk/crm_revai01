@@ -8,6 +8,7 @@ export interface OrganizationCreateInput {
   employeeBand?: EmployeeBand;
   industry?: string;
   source?: string | null;
+  notes?: string | null;
   ownerId?: string;
   supportSlaPolicyId?: string;
   customFields?: Record<string, unknown>;

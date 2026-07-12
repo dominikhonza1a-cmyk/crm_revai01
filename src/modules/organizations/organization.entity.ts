@@ -21,6 +21,7 @@ export const organizations = pgTable("organization", {
   healthStatus: text("health_status"),
   billingNotes: text("billing_notes"),
   source: text("source"),
+  notes: text("notes"),
   customFields: jsonb("custom_fields").notNull().default({}),
   ...auditColumns,
   ...softDelete,

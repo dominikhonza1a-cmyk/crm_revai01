@@ -8,6 +8,7 @@ export const organizationCreateSchema = z.object({
   employeeBand: z.enum(["1_49", "50_199", "200_500", "500_plus"]).optional(),
   industry: z.string().max(100).optional(),
   source: z.string().max(200).nullable().optional(),
+  notes: z.string().max(20000).nullable().optional(),
   ownerId: z.string().uuid().optional(),
   supportSlaPolicyId: z.string().uuid().optional(),
   customFields: z.record(z.unknown()).optional(),

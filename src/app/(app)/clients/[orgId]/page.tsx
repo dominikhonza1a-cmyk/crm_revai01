@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { trpc } from "@/ui/trpc";
-import { Card, Badge, Tabs, Loading, Empty, money } from "@/ui/components/ui";
+import { Card, Badge, Tabs, Loading, Empty, money, SectionTitle } from "@/ui/components/ui";
+import { MarkdownLite } from "@/ui/components/markdown-lite";
 import { TimelineTab, DocumentsTab } from "@/ui/components/entity-tabs";
 import { NewContactModal } from "@/ui/components/entity-forms";
 import { TagPicker } from "@/ui/components/tag-picker";
@@ -56,6 +57,9 @@ export default function ClientDetailPage() {
             <Row label="Zdroj" value={o.source ?? "—"} />
           </div></Card>
           <CustomFieldsCard entityType="organization" entityId={orgId} values={(o.customFields ?? {}) as Record<string, unknown>} />
+          <div className="sm:col-span-2">
+            <OrgNotesCard orgId={orgId} initial={(o as { notes?: string | null }).notes ?? ""} />
+          </div>
         </div>
       )}
       {tab === "projects" && <ProjectsTab orgId={orgId} />}
@@ -70,6 +74,52 @@ export default function ClientDetailPage() {
 
 function Row({ label, value }: { label: string; value: string }) {
   return <div className="flex justify-between"><span className="text-muted">{label}</span><span className="text-ink">{value}</span></div>;
+}
+
+/** Info / poznámky klienta — volné psaní s autosave (jako popis projektu), čtení s markdown. */
+function OrgNotesCard({ orgId, initial }: { orgId: string; initial: string }) {
+  const utils = trpc.useUtils();
+  const [text, setText] = useState<string | null>(null);
+  const [editing, setEditing] = useState(!initial.trim());
+  const [saved, setSaved] = useState<"saved" | "saving" | "dirty">("saved");
+  const update = trpc.organizations.update.useMutation({
+    onSuccess: (_d, vars) => {
+      setSaved("saved");
+      utils.organizations.get.setData({ id: orgId }, (old) => old ? { ...old, notes: vars.notes ?? null } : old);
+    },
+  });
+  const updateRef = useRef(update.mutate);
+  updateRef.current = update.mutate;
+  const value = text ?? initial;
+
+  useEffect(() => {
+    if (text === null) return;
+    setSaved("dirty");
+    const t = setTimeout(() => { setSaved("saving"); updateRef.current({ id: orgId, notes: text || null }); }, 800);
+    return () => clearTimeout(t);
+  }, [text, orgId]);
+
+  return (
+    <Card>
+      <SectionTitle right={
+        <span className="flex items-center gap-3">
+          <span className={`text-xs ${saved === "saved" ? "text-accent" : "text-faint"}`}>{saved === "saved" ? "Uloženo ✓" : saved === "saving" ? "Ukládám…" : "Píšeš…"}</span>
+          <button className="rounded-xl border border-line px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent/40 hover:text-accent"
+            onClick={() => setEditing((e) => !e)}>{editing ? "✓ Hotovo" : "✎ Upravit"}</button>
+        </span>
+      }>Info a poznámky</SectionTitle>
+      {editing ? (
+        <textarea
+          className="min-h-32 w-full resize-y rounded-2xl border border-line bg-surface-2 p-4 text-sm leading-relaxed text-ink outline-none placeholder:text-faint focus:border-accent/40"
+          placeholder="Cokoli ke klientovi — kontext, dohody, na co nezapomenout… Ukládá se samo. Umí **tučně**, # nadpisy, - odrážky, odkazy."
+          value={value} onChange={(e) => setText(e.target.value)} />
+      ) : (
+        <div className="cursor-text" onDoubleClick={() => setEditing(true)} title="Dvojklik = upravit">
+          {value.trim() ? <MarkdownLite text={value} /> : <p className="text-sm text-faint">Zatím bez poznámek.</p>}
+        </div>
+      )}
+    </Card>
+  );
 }
 
 function ProjectsTab({ orgId }: { orgId: string }) {
