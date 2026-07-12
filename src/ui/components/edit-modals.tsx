@@ -7,12 +7,9 @@ import { trpc } from "@/ui/trpc";
 import { Modal, fieldInput, fieldLabel, btnPrimary, btnGhost, formatError } from "./ui";
 import { ConfirmDeleteModal } from "./confirm-delete";
 import { Select } from "./select";
-import { LIFECYCLE_OPTIONS } from "@/domain/enums";
+import { LIFECYCLE_OPTIONS, EMPLOYEE_BAND_LABEL } from "@/domain/enums";
 
-const BAND_OPTIONS = [
-  { value: "", label: "—" }, { value: "1_49", label: "1–49" }, { value: "50_199", label: "50–199" },
-  { value: "200_500", label: "200–500" }, { value: "500_plus", label: "500+" },
-];
+const BAND_OPTIONS = [{ value: "", label: "—" }, ...Object.entries(EMPLOYEE_BAND_LABEL).map(([value, label]) => ({ value, label }))];
 
 /** Editace stávajícího klienta (název, web, odvětví, velikost, stav vztahu). */
 export function EditClientModal({ org, onClose }: {

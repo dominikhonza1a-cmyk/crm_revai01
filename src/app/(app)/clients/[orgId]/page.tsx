@@ -14,6 +14,7 @@ import { EditClientModal, EditDealModal } from "@/ui/components/edit-modals";
 import { EditContactModal, EditTaskModal } from "@/ui/components/edit-contact-task";
 import { NewProjectModal, NewStandaloneTaskModal } from "@/ui/components/new-entity-modals";
 import { TaskStatusSelect } from "@/ui/components/entity-forms";
+import { EMPLOYEE_BAND_LABEL } from "@/domain/enums";
 
 const TABS = [
   { key: "overview", label: "Přehled" }, { key: "projects", label: "Projekty" }, { key: "tasks", label: "Úkoly" },
@@ -51,7 +52,7 @@ export default function ClientDetailPage() {
           <Card><div className="space-y-2 text-sm">
             <Row label="Web" value={o.website ?? "—"} />
             <Row label="Odvětví" value={o.industry ?? "—"} />
-            <Row label="Velikost" value={o.employeeBand ?? "—"} />
+            <Row label="Velikost" value={o.employeeBand ? (EMPLOYEE_BAND_LABEL[o.employeeBand] ?? o.employeeBand) : "—"} />
             <Row label="Zdroj" value={o.source ?? "—"} />
           </div></Card>
           <CustomFieldsCard entityType="organization" entityId={orgId} values={(o.customFields ?? {}) as Record<string, unknown>} />

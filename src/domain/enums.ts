@@ -11,6 +11,10 @@ export type LifecycleStage = (typeof LifecycleStage)[number];
 
 export const EmployeeBand = ["1_49", "50_199", "200_500", "500_plus"] as const;
 export type EmployeeBand = (typeof EmployeeBand)[number];
+/** Čitelné popisky velikosti firmy (počet zaměstnanců) — místo syrového "50_199". */
+export const EMPLOYEE_BAND_LABEL: Record<string, string> = {
+  "1_49": "1–49", "50_199": "50–199", "200_500": "200–500", "500_plus": "500+",
+};
 
 export const ContactRoleKind = ["sponsor", "decision_maker", "technical_contact", "end_user", "billing_contact", "champion"] as const;
 export type ContactRoleKind = (typeof ContactRoleKind)[number];
