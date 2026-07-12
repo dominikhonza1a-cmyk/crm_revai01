@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { LIFECYCLE_META } from "@/domain/enums";
 
 /** Znovupoužitelné UI prvky — tmavý motiv, mint/emerald akcent. */
 
@@ -31,6 +32,18 @@ export function StatCard({ label, value, hint, icon, iconSrc, tone = "accent", d
       {hint && <div className="mt-1 text-xs text-faint">{hint}</div>}
       {doodle && <img src={doodle} alt="" width={52} height={52} className="pointer-events-none absolute bottom-2 right-3 select-none opacity-90" />}
     </div>
+  );
+}
+
+/** Barevný badge pro stav vztahu klienta — barva podle stavu (LIFECYCLE_META). */
+export function LifecycleBadge({ stage }: { stage: string }) {
+  const meta = LIFECYCLE_META[stage];
+  if (!meta) return <span className="text-xs text-faint">{stage}</span>;
+  return (
+    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+      style={{ backgroundColor: `${meta.color}22`, color: meta.color }}>
+      {meta.label}
+    </span>
   );
 }
 

@@ -2,9 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { trpc } from "@/ui/trpc";
-import { Card, Badge, Loading, Empty } from "@/ui/components/ui";
+import { Card, Badge, Loading, Empty, LifecycleBadge } from "@/ui/components/ui";
 
-import { LIFECYCLE_META } from "@/domain/enums";
+
 
 export default function ClientsPage() {
   const router = useRouter();
@@ -27,11 +27,10 @@ export default function ClientsPage() {
           </thead>
           <tbody className="divide-y divide-line">
             {data.items.map((o) => {
-              const lc = LIFECYCLE_META[o.lifecycleStage];
               return (
                 <tr key={o.id} onClick={() => router.push(`/clients/${o.id}`)} className="cursor-pointer transition-colors hover:bg-white/5">
                   <td className="px-4 py-3 font-medium text-ink">{o.name}</td>
-                  <td className="px-4 py-3">{lc ? <Badge tone={lc.tone}>{lc.label}</Badge> : o.lifecycleStage}</td>
+                  <td className="px-4 py-3"><LifecycleBadge stage={o.lifecycleStage} /></td>
                   <td className="px-4 py-3 text-muted">{o.industry ?? "—"}</td>
                   <td className="px-4 py-3 text-muted">{o.website ?? "—"}</td>
                 </tr>

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { trpc } from "@/ui/trpc";
-import { Card, Badge, Tabs, Loading, Empty, money, SectionTitle } from "@/ui/components/ui";
+import { Card, Badge, Tabs, Loading, Empty, money, SectionTitle, LifecycleBadge } from "@/ui/components/ui";
 import { MarkdownLite } from "@/ui/components/markdown-lite";
 import { TimelineTab, DocumentsTab } from "@/ui/components/entity-tabs";
 import { NewContactModal } from "@/ui/components/entity-forms";
@@ -15,7 +15,6 @@ import { EditContactModal, EditTaskModal } from "@/ui/components/edit-contact-ta
 import { NewProjectModal, NewStandaloneTaskModal } from "@/ui/components/new-entity-modals";
 import { TaskStatusSelect } from "@/ui/components/entity-forms";
 
-import { LIFECYCLE_META } from "@/domain/enums";
 const TABS = [
   { key: "overview", label: "Přehled" }, { key: "projects", label: "Projekty" }, { key: "tasks", label: "Úkoly" },
   { key: "contacts", label: "Kontakty" }, { key: "timeline", label: "Timeline" }, { key: "documents", label: "Dokumenty" }, { key: "deals", label: "Dealy" },
@@ -31,14 +30,13 @@ export default function ClientDetailPage() {
   if (org.isLoading) return <Loading />;
   if (!org.data) return <Empty>Klient nenalezen</Empty>;
   const o = org.data;
-  const lc = LIFECYCLE_META[o.lifecycleStage];
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
       <div className="flex items-center gap-3">
         <Link href="/clients" className="grid h-8 w-8 place-items-center rounded-lg text-faint hover:bg-white/5 hover:text-ink">←</Link>
         <h1 className="font-display text-3xl tracking-wide text-ink">{o.name}</h1>
-        {lc && <Badge tone={lc.tone}>{lc.label}</Badge>}
+        <LifecycleBadge stage={o.lifecycleStage} />
         <TagPicker entityType="organization" entityId={orgId} />
         <span className="flex-1" />
         <button className="rounded-xl border border-line px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent/40 hover:text-accent"
