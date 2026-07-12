@@ -94,10 +94,6 @@ function CashflowBars({ months }: { months: FinMonth[] }) {
                       <span className="text-ink">{money(v)}</span>
                     </div>
                   ))}
-                  <div className="mt-1.5 flex justify-between border-t border-line pt-1.5 text-xs">
-                    <span className="text-faint">cashflow</span>
-                    <span className={net >= 0 ? "text-accent" : "text-red-300"}>{net >= 0 ? "+" : ""}{money(net)}</span>
-                  </div>
                 </div>
               )}
             </div>
