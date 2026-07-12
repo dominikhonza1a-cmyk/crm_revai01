@@ -48,7 +48,7 @@ export default function ProjectDetailPage() {
     <div className="mx-auto max-w-5xl space-y-5">
       <div className="flex flex-wrap items-center gap-3">
         <Link href="/projects" className="grid h-8 w-8 place-items-center rounded-lg text-faint hover:bg-white/5 hover:text-ink">←</Link>
-        <h1 className="text-2xl font-semibold text-ink">{p.name}</h1>
+        <h1 className="font-display text-3xl tracking-wide text-ink">{p.name}</h1>
         <button className="text-xs text-faint hover:text-accent" title="Přejmenovat projekt"
           onClick={() => { const n = prompt("Nový název projektu:", p.name); if (n?.trim() && n !== p.name) rename.mutate({ projectId, name: n.trim() }); }}>✎</button>
         {st && <Badge tone={st.tone}>{st.label}</Badge>}

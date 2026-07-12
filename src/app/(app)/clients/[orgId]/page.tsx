@@ -37,7 +37,7 @@ export default function ClientDetailPage() {
     <div className="mx-auto max-w-5xl space-y-5">
       <div className="flex items-center gap-3">
         <Link href="/clients" className="grid h-8 w-8 place-items-center rounded-lg text-faint hover:bg-white/5 hover:text-ink">←</Link>
-        <h1 className="text-2xl font-semibold text-ink">{o.name}</h1>
+        <h1 className="font-display text-3xl tracking-wide text-ink">{o.name}</h1>
         {lc && <Badge tone={lc.tone}>{lc.label}</Badge>}
         <TagPicker entityType="organization" entityId={orgId} />
         <span className="flex-1" />

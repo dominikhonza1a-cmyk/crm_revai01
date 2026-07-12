@@ -37,7 +37,7 @@ export function StatCard({ label, value, hint, icon, iconSrc, tone = "accent", d
 export function SectionTitle({ children, right, icon }: { children: ReactNode; right?: ReactNode; icon?: string }) {
   return (
     <div className="mb-4 flex items-center justify-between">
-      <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
+      <h2 className="flex items-center gap-2 font-display text-xl tracking-wide text-ink">
         {icon && <img src={icon} alt="" width={26} height={26} className="pointer-events-none select-none" />}
         {children}
       </h2>
@@ -100,7 +100,7 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl border border-line bg-surface p-6 shadow-2xl shadow-black/40" onClick={(e) => e.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-ink">{title}</h2>
+          <h2 className="font-display text-2xl tracking-wide text-ink">{title}</h2>
           <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-faint hover:bg-white/5 hover:text-ink">✕</button>
         </div>
         {children}
