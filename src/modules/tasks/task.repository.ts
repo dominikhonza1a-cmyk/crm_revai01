@@ -1,10 +1,16 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, isNull, isNotNull, desc, inArray, lt, max } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { db } from "@/shared/db";
 import { currentWorkspaceId } from "@/shared/tenant-context";
 import { clampLimit, type Page } from "@/shared/pagination";
+import { organizations } from "@/modules/organizations/organization.entity";
+import { projects } from "@/modules/projects/project.entity";
 import { tasks, type TaskRow } from "./task.entity";
 import type { TaskListFilter } from "./task.types";
+
+/** Úkol obohacený o viditelnou vazbu na klienta (přímo, nebo přes projekt) a název projektu. */
+export type TaskListRow = TaskRow & { clientId: string | null; clientName: string | null; projectName: string | null };
 
 export interface TaskInsertData {
   type: string; title: string; projectId?: string | null; organizationId?: string | null; phaseId?: string | null;
@@ -20,7 +26,7 @@ export const taskRepository = {
       .where(and(eq(tasks.id, id), eq(tasks.workspaceId, ws), isNull(tasks.deletedAt))).limit(1))[0] ?? null;
   },
 
-  async list(filter: TaskListFilter, userId: string | null, limit?: number): Promise<Page<TaskRow>> {
+  async list(filter: TaskListFilter, userId: string | null, limit?: number): Promise<Page<TaskListRow>> {
     const ws = currentWorkspaceId();
     const conds = [eq(tasks.workspaceId, ws), isNull(tasks.deletedAt)];
     if (filter.type) conds.push(eq(tasks.type, filter.type));
@@ -36,8 +42,25 @@ export const taskRepository = {
       conds.push(eq(tasks.type, "support"));
       conds.push(inArray(tasks.status, ["todo", "in_progress", "waiting_on_client", "blocked"]));
     }
-    const items = await db().select().from(tasks)
+    // klient může viset přímo na úkolu (organizationId) nebo přes projekt (project.organizationId)
+    const projOrg = alias(organizations, "task_project_org");
+    const rows = await db().select({
+      task: tasks,
+      orgName: organizations.name,
+      projectName: projects.name,
+      projectOrgId: projects.organizationId,
+      projectOrgName: projOrg.name,
+    }).from(tasks)
+      .leftJoin(organizations, eq(organizations.id, tasks.organizationId))
+      .leftJoin(projects, eq(projects.id, tasks.projectId))
+      .leftJoin(projOrg, eq(projOrg.id, projects.organizationId))
       .where(and(...conds)).orderBy(filter.view === "ticket_queue" ? tasks.dueAt : desc(tasks.createdAt)).limit(clampLimit(limit));
+    const items: TaskListRow[] = rows.map((r) => ({
+      ...r.task,
+      clientId: r.task.organizationId ?? r.projectOrgId ?? null,
+      clientName: r.orgName ?? r.projectOrgName ?? null,
+      projectName: r.projectName ?? null,
+    }));
     return { items, nextCursor: null };
   },
 

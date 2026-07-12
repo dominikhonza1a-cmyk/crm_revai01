@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { trpc } from "@/ui/trpc";
 import { Card, Badge, Loading, Empty } from "@/ui/components/ui";
 import { TaskStatusSelect } from "@/ui/components/entity-forms";
@@ -48,8 +49,16 @@ export default function TasksPage() {
                   <div className="min-w-0 flex-1 cursor-pointer" title="Klik = upravit úkol"
                     onClick={() => setEditing({ id: t.id, title: t.title, priority: t.priority, dueAt: t.dueAt, assigneeId: t.assigneeId ?? null, description: (t as { description?: string | null }).description })}>
                     <div className="truncate text-sm font-medium text-ink">{t.title} <span className="text-xs text-faint">✎</span></div>
-                    <div className="mt-0.5 flex items-center gap-2 text-xs text-faint">
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-faint">
                       {t.type === "support" && <Badge tone="blue">ticket</Badge>}
+                      {t.clientName && (
+                        <Link href={`/clients/${t.clientId}`} onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 font-medium text-accent transition hover:brightness-110">
+                          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M9 17h.01M15 9h.01M15 13h.01M15 17h.01" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                          {t.clientName}
+                        </Link>
+                      )}
+                      {t.projectName && <span className="text-faint">· {t.projectName}</span>}
                       <span className="uppercase">{t.priority}</span>
                       {t.dueAt && <span>· do {new Date(t.dueAt).toLocaleDateString("cs-CZ")}</span>}
                     </div>

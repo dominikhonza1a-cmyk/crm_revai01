@@ -201,8 +201,9 @@ function TasksTab({ orgId }: { orgId: string }) {
             <div className="min-w-0 flex-1 cursor-pointer" title="Klik = upravit úkol"
               onClick={() => setEditing({ id: t.id, title: t.title, priority: t.priority, dueAt: t.dueAt, assigneeId: t.assigneeId ?? null, description: (t as { description?: string | null }).description })}>
               <div className="truncate text-sm text-ink">{t.title} <span className="text-xs text-faint">✎</span></div>
-              <div className="mt-0.5 flex items-center gap-2 text-xs text-faint">
+              <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-faint">
                 {t.type === "support" && <Badge tone="blue">ticket</Badge>}
+                {t.projectName && <span className="rounded-full bg-white/5 px-2 py-0.5 text-muted">{t.projectName}</span>}
                 <span className="uppercase">{t.priority}</span>
                 {t.dueAt && <span>· do {new Date(t.dueAt).toLocaleDateString("cs-CZ")}</span>}
               </div>
