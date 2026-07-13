@@ -170,6 +170,17 @@ export const reportingService = {
       .orderBy(tasks.dueAt).limit(8);
   },
 
+  /** Otevřené úkoly konkrétního uživatele (přiřazené jemu) — pro personalizovaný ranní souhrn. */
+  async myOpenTasks(userId: string, now = new Date()) {
+    const ws = currentWorkspaceId();
+    const dayEnd = new Date(now); dayEnd.setHours(23, 59, 59, 999);
+    return db().select({ id: tasks.id, title: tasks.title, dueAt: tasks.dueAt, priority: tasks.priority, type: tasks.type })
+      .from(tasks)
+      .where(and(eq(tasks.workspaceId, ws), isNull(tasks.deletedAt), eq(tasks.assigneeId, userId),
+        inArray(tasks.status, ["todo", "in_progress", "blocked", "waiting_on_client"])))
+      .orderBy(sql`${tasks.dueAt} asc nulls last`).limit(20);
+  },
+
   /** Otevřené úkoly celého workspace (sdílené — 2 admini vidí vše). */
   async openTasks() {
     const ws = currentWorkspaceId();

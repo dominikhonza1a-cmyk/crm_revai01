@@ -189,32 +189,38 @@ export async function runDailyDigest(): Promise<void> {
 }
 
 /**
- * Ranní souhrn „co je potřeba udělat" — e-mail všem aktivním uživatelům: úkoly po termínu,
- * úkoly s termínem dnes a otevřené tickety. Posílá se i když nic nehoří (krátká zpráva).
+ * Ranní souhrn „co je potřeba udělat" — PERSONALIZOVANÝ e-mail: každý člen týmu dostane
+ * jen SVÉ otevřené úkoly (přiřazené jemu). Uživatelé bez otevřených úkolů e-mail nedostávají
+ * (tím pádem ani seed/servisní účty typu info@ nebo nepoužívané účty se 0 úkoly nespamujeme).
  */
 export async function runMorningSummary(now = new Date()): Promise<{ sent: number }> {
   let sent = 0;
   await forEachWorkspace("morning-summary", async () => {
-    const overdue = await reportingService.todayTasks();   // po termínu + dnes (limit 8)
-    const tickets = await reportingService.openTickets();
-    const ticketCount = tickets.reduce((a, t) => a + t.count, 0);
     const users = await securityRepository.listUsersWithRoles();
-    const recipients = users.filter((u) => u.status !== "deactivated" && u.email);
+    const recipients = users.filter((u) => u.status === "active" && u.email);
     if (!recipients.length) return;
 
     const day = now.toLocaleDateString("cs-CZ", { weekday: "long", day: "numeric", month: "long" });
-    const taskLines = overdue.length
-      ? "<ul>" + overdue.map((t) => `<li>${escapeHtml(t.title)}${t.dueAt ? ` — do ${new Date(t.dueAt).toLocaleDateString("cs-CZ")}` : ""}</li>`).join("") + "</ul>"
-      : "<p>Žádné úkoly s termínem — čistý stůl. ✅</p>";
-    const ticketLine = ticketCount ? `<p>Otevřené tickety: <b>${ticketCount}</b></p>` : "";
-    const html = `<div style="font-family:system-ui,sans-serif">
-      <h2>Dobré ráno — ${day}</h2>
-      <h3>Co je dnes potřeba</h3>${taskLines}${ticketLine}
-      <p style="color:#888;font-size:12px">revai CRM · <a href="${loadConfig().APP_URL}/dashboard">otevřít dashboard</a></p></div>`;
-
     const email = resolveEmailProvider();
+    const dayEnd = new Date(now); dayEnd.setHours(23, 59, 59, 999);
+
     for (const u of recipients) {
-      try { await email.send({ to: [u.email], subject: `revai CRM — ranní souhrn (${overdue.length} úkolů)`, html }); sent++; }
+      const myTasks = await reportingService.myOpenTasks(u.id, now);
+      if (!myTasks.length) continue; // žádné úkoly → žádný e-mail (nespamovat prázdné/servisní účty)
+
+      const overdueCount = myTasks.filter((t) => t.dueAt && new Date(t.dueAt) < now).length;
+      const list = "<ul style=\"padding-left:18px\">" + myTasks.map((t) => {
+        const over = t.dueAt && new Date(t.dueAt) < now;
+        const dueTxt = t.dueAt ? ` — <span style="color:${over ? "#dc2626" : "#666"}">do ${new Date(t.dueAt).toLocaleDateString("cs-CZ")}${over ? " (po termínu)" : ""}</span>` : "";
+        return `<li>${escapeHtml(t.title)}${dueTxt}</li>`;
+      }).join("") + "</ul>";
+      const firstName = escapeHtml((u.fullName || "").split(" ")[0] || "");
+      const html = `<div style="font-family:system-ui,sans-serif">
+        <h2>Dobré ráno${firstName ? `, ${firstName}` : ""} — ${day}</h2>
+        <h3>Tvoje otevřené úkoly (${myTasks.length})${overdueCount ? ` · ${overdueCount} po termínu` : ""}</h3>${list}
+        <p style="color:#888;font-size:12px">revai CRM · <a href="${loadConfig().APP_URL}/tasks">otevřít úkoly</a></p></div>`;
+
+      try { await email.send({ to: [u.email], subject: `revai CRM — ranní souhrn (${myTasks.length} úkolů)`, html }); sent++; }
       catch (err) { logger.warn("ranní souhrn selhal", { user: u.email, err: String(err) }); }
     }
   });
