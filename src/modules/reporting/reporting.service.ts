@@ -129,12 +129,12 @@ export const reportingService = {
       .from(projects).where(and(eq(projects.workspaceId, ws), isNull(projects.deletedAt))).groupBy(projects.status);
   },
 
-  /** Počet overdue tasků (po termínu, neuzavřené). */
-  async overdueTasks() {
+  /** Počet overdue tasků (po termínu, neuzavřené). Per-řešitel: moje úkoly + zatím nepřiřazené. */
+  async overdueTasks(userId?: string | null) {
     const ws = currentWorkspaceId();
     const r = (await db().select({ n: sql<number>`count(*)::int` }).from(tasks)
       .where(and(eq(tasks.workspaceId, ws), isNull(tasks.deletedAt), lt(tasks.dueAt, new Date()),
-        inArray(tasks.status, ["todo", "in_progress", "blocked", "waiting_on_client"]))))[0];
+        inArray(tasks.status, ["todo", "in_progress", "blocked", "waiting_on_client"]), assignedToMeOrNull(userId))))[0];
     return { count: r?.n ?? 0 };
   },
 
@@ -159,14 +159,14 @@ export const reportingService = {
       .groupBy(organizations.name).orderBy(desc(sql`sum(${deals.amountMinor})`)).limit(limit);
   },
 
-  /** Dnešní úkoly: po termínu + s termínem dnes (pro dashboard „Dnes"). */
-  async todayTasks() {
+  /** Dnešní úkoly: po termínu + s termínem dnes (pro dashboard „Dnes"). Per-řešitel: moje + nepřiřazené. */
+  async todayTasks(userId?: string | null) {
     const ws = currentWorkspaceId();
     const dayEnd = new Date(); dayEnd.setHours(23, 59, 59, 999);
     return db().select({ id: tasks.id, title: tasks.title, dueAt: tasks.dueAt, priority: tasks.priority, type: tasks.type })
       .from(tasks)
       .where(and(eq(tasks.workspaceId, ws), isNull(tasks.deletedAt),
-        sql`${tasks.status} not in ('done','canceled')`, sql`${tasks.dueAt} is not null`, lt(tasks.dueAt, dayEnd)))
+        sql`${tasks.status} not in ('done','canceled')`, sql`${tasks.dueAt} is not null`, lt(tasks.dueAt, dayEnd), assignedToMeOrNull(userId)))
       .orderBy(tasks.dueAt).limit(8);
   },
 
@@ -181,22 +181,29 @@ export const reportingService = {
       .orderBy(sql`${tasks.dueAt} asc nulls last`).limit(20);
   },
 
-  /** Otevřené úkoly celého workspace (sdílené — 2 admini vidí vše). */
-  async openTasks() {
+  /** Otevřené úkoly — per-řešitel: moje úkoly + zatím nepřiřazené (společný backlog). */
+  async openTasks(userId?: string | null) {
     const ws = currentWorkspaceId();
     const r = (await db().select({ n: sql<number>`count(*)::int` }).from(tasks)
       .where(and(eq(tasks.workspaceId, ws), isNull(tasks.deletedAt),
-        inArray(tasks.status, ["todo", "in_progress", "blocked", "waiting_on_client"]))))[0];
+        inArray(tasks.status, ["todo", "in_progress", "blocked", "waiting_on_client"]), assignedToMeOrNull(userId))))[0];
     return { count: r?.n ?? 0 };
   },
 
-  /** Souhrn dashboardu — sada widgetů najednou. */
-  async dashboard(_ctx: TenantContext) {
+  /** Souhrn dashboardu — sada widgetů najednou. Úkolové widgety jsou per-řešitel (dle přihlášeného). */
+  async dashboard(ctx: TenantContext) {
     const [pipeline, clients, projStatus, overdue, tickets, revenue, openTasks, finance] = await Promise.all([
-      this.pipelineValue(), this.activeClients(), this.projectsStatus(), this.overdueTasks(),
-      this.openTickets(), this.revenuePerClient(), this.openTasks(),
+      this.pipelineValue(), this.activeClients(), this.projectsStatus(), this.overdueTasks(ctx.userId),
+      this.openTickets(), this.revenuePerClient(), this.openTasks(ctx.userId),
       this.finance(),
     ]);
     return { pipeline, activeClients: clients, projStatus, overdue, tickets, revenue, openTasks, finance };
   },
 };
+
+/** Podmínka „přiřazeno mně, nebo zatím nikomu" — pro per-řešitel widgety dashboardu.
+ *  Bez userId (např. servisní volání) vrací vždy true = žádné omezení. */
+function assignedToMeOrNull(userId?: string | null) {
+  if (!userId) return sql`true`;
+  return sql`(${tasks.assigneeId} = ${userId} or ${tasks.assigneeId} is null)`;
+}
