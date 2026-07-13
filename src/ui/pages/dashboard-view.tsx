@@ -212,7 +212,7 @@ export function DashboardView({ data }: { data: DashboardData }) {
       {/* Finance — vyděláno, retainery, náklady, cashflow měsíce */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Historicky vyděláno" value={money(Number(fin.wonTotalCzkMinor))} iconSrc="/doodles/safe.svg" />
-        <StatCard label="Měsíční retainery" value={money(Number(fin.retainerMonthlyCzkMinor))} iconSrc="/doodles/retainer.svg" />
+        <Link href="/retainers" className="block h-full"><StatCard label="Měsíční retainery" value={money(Number(fin.retainerMonthlyCzkMinor))} iconSrc="/doodles/retainer.svg" /></Link>
         <Link href="/subscriptions" className="block h-full"><StatCard label="Měsíční náklady" value={money(Number(fin.subsMonthlyCzkMinor))} hint={fin.usdRate ? `kurz $ ${fin.usdRate.toFixed(2)}` : undefined} iconSrc="/doodles/card.svg" /></Link>
         <StatCard label={`Cashflow — ${periodTitle}`} value={`${periodCashflow >= 0 ? "+" : ""}${money(periodCashflow)}`}
           iconSrc={periodCashflow >= 0 ? "/doodles/trophy.png" : "/doodles/icon-clock.png"} />

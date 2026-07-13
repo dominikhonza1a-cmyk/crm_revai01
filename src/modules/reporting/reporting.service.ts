@@ -190,6 +190,35 @@ export const reportingService = {
     return { count: r?.n ?? 0 };
   },
 
+  /** Seznam retainerů (projekty s měsíční sazbou) — pro rozklik dlaždice „Měsíční retainery".
+   *  Vrací i pozastavené/uzavřené (běžící = retainer_active a status active/draft se počítá do součtu). */
+  async retainers() {
+    const ws = currentWorkspaceId();
+    const rows = await db().select({
+      id: projects.id, name: projects.name, status: projects.status,
+      monthlyAmountMinor: projects.monthlyAmountMinor, retainerActive: projects.retainerActive,
+      startDate: projects.startDate, payments: projects.payments,
+      organizationId: projects.organizationId, organizationName: organizations.name,
+    }).from(projects)
+      .innerJoin(organizations, eq(organizations.id, projects.organizationId))
+      .where(and(eq(projects.workspaceId, ws), isNull(projects.deletedAt), eq(projects.engagementType, "retainer")))
+      .orderBy(desc(projects.retainerActive), organizations.name);
+    const items = rows.map((r) => {
+      const running = r.retainerActive && (r.status === "active" || r.status === "draft");
+      // poslední retainer platba (dle poznámky „retainer…") pro info „naposledy fakturováno"
+      const pays = ((r.payments as { amountMinor: number; date: string; note?: string }[]) ?? [])
+        .filter((p) => (p.note ?? "").startsWith("retainer")).sort((a, b) => (a.date < b.date ? 1 : -1));
+      return {
+        id: r.id, name: r.name, status: r.status, running,
+        monthlyCzkMinor: r.monthlyAmountMinor ?? 0n,
+        organizationId: r.organizationId, organizationName: r.organizationName,
+        startDate: r.startDate ?? null, lastBilledOn: pays[0]?.date ?? null,
+      };
+    });
+    const totalMonthlyCzkMinor = items.reduce((a, r) => a + (r.running ? Number(r.monthlyCzkMinor) : 0), 0);
+    return { items, totalMonthlyCzkMinor };
+  },
+
   /** Souhrn dashboardu — sada widgetů najednou. Úkolové widgety jsou per-řešitel (dle přihlášeného). */
   async dashboard(ctx: TenantContext) {
     const [pipeline, clients, projStatus, overdue, tickets, revenue, openTasks, finance] = await Promise.all([
