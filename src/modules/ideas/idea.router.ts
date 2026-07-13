@@ -5,7 +5,16 @@ import { router, protectedProcedure } from "@/api/trpc";
 import { db } from "@/shared/db";
 import { currentWorkspaceId } from "@/shared/tenant-context";
 import { NotFound } from "@/domain/errors";
+import { supabaseServer } from "@/shared/supabase";
 import { ideas } from "./idea.entity";
+
+// Obrázky v nápadech → veřejný bucket (stabilní URL bez expirace, aby šly vložit inline do markdownu).
+const IMG_BUCKET = "idea-images";
+async function ensureImageBucket() {
+  const sb = supabaseServer();
+  const { data } = await sb.storage.getBucket(IMG_BUCKET);
+  if (!data) await sb.storage.createBucket(IMG_BUCKET, { public: true, fileSizeLimit: "10MB", allowedMimeTypes: ["image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml"] });
+}
 
 /**
  * Nápady: sdílený blok poznámek mimo klienty (nápady, odkazy, plány).
@@ -69,5 +78,20 @@ export const ideasRouter = router({
       const ws = currentWorkspaceId();
       await db().update(ideas).set({ deletedAt: new Date() })
         .where(and(eq(ideas.id, input.id), eq(ideas.workspaceId, ws)));
+    }),
+
+  /** Podepsaná URL pro nahrání obrázku (vložení do textu nápadu). Vrací i veřejnou URL pro markdown. */
+  imageUploadUrl: protectedProcedure
+    .input(z.object({ filename: z.string().min(1).max(200) }))
+    .mutation(async ({ input }) => {
+      await ensureImageBucket();
+      const ws = currentWorkspaceId();
+      const clean = input.filename.replace(/[^\w.\-]+/g, "_").slice(0, 120) || "obrazek.png";
+      const path = `${ws}/${randomUUID()}-${clean}`;
+      const sb = supabaseServer();
+      const { data, error } = await sb.storage.from(IMG_BUCKET).createSignedUploadUrl(path);
+      if (error || !data) throw new Error(`Nahrání obrázku se nepodařilo připravit: ${error?.message ?? "neznámá chyba"}`);
+      const { data: pub } = sb.storage.from(IMG_BUCKET).getPublicUrl(path);
+      return { path: data.path, token: data.token, bucket: IMG_BUCKET, publicUrl: pub.publicUrl };
     }),
 });

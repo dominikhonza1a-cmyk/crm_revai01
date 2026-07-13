@@ -22,6 +22,8 @@ export default function IdeaDetailPage() {
   const [saved, setSaved] = useState<"saved" | "saving" | "dirty">("saved");
   const [mode, setMode] = useState<"view" | "edit" | null>(null);   // null = podle obsahu po načtení
   const textRef = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const imgUpload = trpc.ideas.imageUploadUrl.useMutation();
 
   const update = trpc.ideas.update.useMutation({
     onSuccess: () => setSaved("saved"),
@@ -94,6 +96,41 @@ export default function IdeaDetailPage() {
     requestAnimationFrame(() => { el.focus(); el.setSelectionRange(cursor, cursor); });
   };
 
+  /** Vloží text na pozici kurzoru (obrázek, tabulka…). */
+  const insertAtCursor = (snippet: string) => {
+    const el = textRef.current;
+    const base = contentValue;
+    const a = el ? el.selectionStart : base.length;
+    const b = el ? el.selectionEnd : base.length;
+    const next = base.slice(0, a) + snippet + base.slice(b);
+    setContent(next);
+    const cursor = a + snippet.length;
+    requestAnimationFrame(() => { if (el) { el.focus(); el.setSelectionRange(cursor, cursor); } autoGrow(); });
+  };
+
+  /** Nahraje obrázek do úložiště a vloží ho jako markdown ![](url) na pozici kurzoru. */
+  const uploadImage = async (file: File) => {
+    if (!file.type.startsWith("image/")) return;
+    try {
+      const up = await imgUpload.mutateAsync({ filename: file.name || "obrazek.png" });
+      const { createBrowserClient } = await import("@supabase/ssr");
+      const sb = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!);
+      const { error } = await sb.storage.from(up.bucket).uploadToSignedUrl(up.path, up.token, file);
+      if (error) throw error;
+      insertAtCursor(`\n![${(file.name || "obrázek").replace(/[[\]]/g, "")}](${up.publicUrl})\n`);
+    } catch (e) {
+      alert("Nahrání obrázku se nepodařilo: " + String((e as Error)?.message ?? e));
+    }
+  };
+
+  /** Vložení obrázku ze schránky (Ctrl/Cmd+V screenshotu). */
+  const onPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const imgs = Array.from(e.clipboardData.files).filter((f) => f.type.startsWith("image/"));
+    if (imgs.length) { e.preventDefault(); imgs.forEach(uploadImage); }
+  };
+
+  const TABLE_TEMPLATE = "\n| Sloupec 1 | Sloupec 2 | Sloupec 3 |\n|---|---|---|\n| … | … | … |\n| … | … | … |\n";
+
   return (
     <div className="mx-auto max-w-4xl space-y-5">
       <div className="flex flex-wrap items-center gap-3">
@@ -130,14 +167,25 @@ export default function IdeaDetailPage() {
                 {l}
               </button>
             ))}
+            <span className="mx-0.5 h-4 w-px bg-line" />
+            <button onClick={() => insertAtCursor(TABLE_TEMPLATE)}
+              className="rounded-lg border border-line px-2.5 py-1 text-muted transition-colors hover:border-accent/40 hover:text-accent" title="Vložit tabulku">▦ tabulka</button>
+            <button onClick={() => fileRef.current?.click()} disabled={imgUpload.isPending}
+              className="rounded-lg border border-line px-2.5 py-1 text-muted transition-colors hover:border-accent/40 hover:text-accent disabled:opacity-50" title="Vložit obrázek (nebo vlož ze schránky přes Ctrl/Cmd+V)">
+              {imgUpload.isPending ? "nahrávám…" : "🖼 obrázek"}
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" multiple className="hidden"
+              onChange={(e) => { Array.from(e.target.files ?? []).forEach(uploadImage); e.target.value = ""; }} />
+            <span className="ml-auto hidden text-faint sm:inline">Tabulku i screenshot můžeš rovnou vložit (Ctrl/Cmd+V)</span>
           </div>
           {/* Psaní vlevo, živý náhled formátování vpravo */}
           <div className="grid gap-0 lg:grid-cols-2">
             <textarea
               ref={textRef}
               className="min-h-[50vh] w-full resize-none border-b border-line bg-transparent p-5 text-sm leading-relaxed text-ink outline-none placeholder:text-faint lg:border-b-0 lg:border-r"
-              placeholder="Piš cokoli — poznatky, odkazy, plány… Ukládá se to samo. **tučně**, # nadpis, - odrážka."
+              placeholder="Piš cokoli — poznatky, odkazy, plány… Ukládá se to samo. **tučně**, # nadpis, - odrážka, | tabulka |, screenshot vlož přes Ctrl/Cmd+V."
               value={contentValue}
+              onPaste={onPaste}
               onChange={(e) => { setContent(e.target.value); autoGrow(); }} />
             <div className="min-h-[50vh] overflow-auto p-5">
               <p className="mb-2 text-[10px] uppercase tracking-wide text-faint">Náhled</p>
