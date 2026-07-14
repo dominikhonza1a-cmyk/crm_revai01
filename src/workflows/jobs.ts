@@ -191,11 +191,18 @@ export async function runDailyDigest(): Promise<void> {
 type SummaryTask = { title: string; dueAt: Date | null; priority: string; type: string; description: string | null; clientName: string | null; projectName: string | null };
 const PRIORITY_LABEL: Record<string, string> = { p1: "Kritická", p2: "Vysoká", p3: "Střední", p4: "Nízká" };
 
+// Oslovení (5. pád / přezdívka) per člen týmu — klíčováno e-mailem (stabilní), doplň při novém kolegovi.
+const GREETING_BY_EMAIL: Record<string, string> = {
+  "d.valter@automatizace-ai.cz": "Dominiku",
+  "j.rehberger@automatizace-ai.cz": "Honzo",
+};
+
 /** Sestaví jeden e-mail ranního souhrnu (značkový vizuál, u každého úkolu klient + stručný detail). */
-export function renderMorningSummary(fullName: string, tasks: SummaryTask[], now: Date): { subject: string; html: string } {
+export function renderMorningSummary(email: string, fullName: string, tasks: SummaryTask[], now: Date): { subject: string; html: string } {
   const day = now.toLocaleDateString("cs-CZ", { weekday: "long", day: "numeric", month: "long" });
   const overdue = tasks.filter((t) => t.dueAt && new Date(t.dueAt) < now).length;
-  const firstName = escapeHtml((fullName || "").split(" ")[0] || "");
+  // oslovení: přednostně mapa (5. pád/přezdívka), jinak křestní jméno v 1. pádě
+  const greeting = escapeHtml(GREETING_BY_EMAIL[email.toLowerCase()] ?? (fullName || "").split(" ")[0] ?? "");
 
   const rows = tasks.map((t) => {
     const over = !!(t.dueAt && new Date(t.dueAt) < now);
@@ -218,7 +225,7 @@ export function renderMorningSummary(fullName: string, tasks: SummaryTask[], now
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #eaecf0">
       <tr><td style="background:#0b1220;padding:20px 22px">
         <div style="font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#34d399;font-weight:700">revai CRM</div>
-        <div style="margin-top:6px;font-size:22px;font-weight:700;color:#ffffff">Dobré ráno${firstName ? `, ${firstName}` : ""} 👋</div>
+        <div style="margin-top:6px;font-size:22px;font-weight:700;color:#ffffff">Dobré ráno${greeting ? `, ${greeting}` : ""} 👋</div>
         <div style="margin-top:2px;font-size:13px;color:#94a3b8;text-transform:capitalize">${day}</div>
       </td></tr>
       <tr><td style="padding:18px 22px 6px">
@@ -252,7 +259,7 @@ export async function runMorningSummary(now = new Date(), onlyEmail?: string): P
     for (const u of recipients) {
       const myTasks = await reportingService.myOpenTasks(u.id, now);
       if (!myTasks.length) continue; // žádné úkoly → žádný e-mail (nespamovat prázdné/servisní účty)
-      const { subject, html } = renderMorningSummary(u.fullName, myTasks, now);
+      const { subject, html } = renderMorningSummary(u.email, u.fullName, myTasks, now);
       try { await email.send({ to: [u.email], subject, html }); sent++; }
       catch (err) { logger.warn("ranní souhrn selhal", { user: u.email, err: String(err) }); }
     }
