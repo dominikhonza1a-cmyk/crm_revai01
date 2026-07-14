@@ -188,39 +188,72 @@ export async function runDailyDigest(): Promise<void> {
   await runMorningSummary();
 }
 
+type SummaryTask = { title: string; dueAt: Date | null; priority: string; type: string; description: string | null; clientName: string | null; projectName: string | null };
+const PRIORITY_LABEL: Record<string, string> = { p1: "Kritická", p2: "Vysoká", p3: "Střední", p4: "Nízká" };
+
+/** Sestaví jeden e-mail ranního souhrnu (značkový vizuál, u každého úkolu klient + stručný detail). */
+export function renderMorningSummary(fullName: string, tasks: SummaryTask[], now: Date): { subject: string; html: string } {
+  const day = now.toLocaleDateString("cs-CZ", { weekday: "long", day: "numeric", month: "long" });
+  const overdue = tasks.filter((t) => t.dueAt && new Date(t.dueAt) < now).length;
+  const firstName = escapeHtml((fullName || "").split(" ")[0] || "");
+
+  const rows = tasks.map((t) => {
+    const over = !!(t.dueAt && new Date(t.dueAt) < now);
+    const due = t.dueAt
+      ? `<span style="display:inline-block;font-size:12px;font-weight:600;color:${over ? "#dc2626" : "#0f9d6b"}">${over ? "⚠ po termínu · " : ""}do ${new Date(t.dueAt).toLocaleDateString("cs-CZ")}</span>`
+      : `<span style="font-size:12px;color:#9aa4b2">bez termínu</span>`;
+    const client = t.clientName
+      ? `<span style="display:inline-block;padding:1px 8px;border-radius:999px;background:#0f9d6b1a;color:#0f9d6b;font-size:12px;font-weight:600">${escapeHtml(t.clientName)}</span>`
+      : `<span style="display:inline-block;padding:1px 8px;border-radius:999px;background:#6b72801a;color:#98a2b3;font-size:12px">bez klienta</span>`;
+    const project = t.projectName ? `<span style="font-size:12px;color:#98a2b3">${escapeHtml(t.projectName)}</span>` : "";
+    const detail = t.description ? `<div style="margin-top:4px;font-size:13px;color:#667085;line-height:1.4">${escapeHtml(t.description.replace(/\s+/g, " ").trim()).slice(0, 140)}</div>` : "";
+    const meta = [client, project, `<span style="font-size:12px;color:#98a2b3">${PRIORITY_LABEL[t.priority] ?? t.priority.toUpperCase()}</span>`, due].filter(Boolean).join('<span style="color:#d0d5dd"> · </span>');
+    return `<tr><td style="padding:14px 18px;border-top:1px solid #eaecf0">
+      <div style="font-size:15px;font-weight:600;color:#101828">${escapeHtml(t.title)}</div>
+      <div style="margin-top:6px">${meta}</div>${detail}
+    </td></tr>`;
+  }).join("");
+
+  const html = `<div style="margin:0;padding:24px 12px;background:#f2f4f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #eaecf0">
+      <tr><td style="background:#0b1220;padding:20px 22px">
+        <div style="font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#34d399;font-weight:700">revai CRM</div>
+        <div style="margin-top:6px;font-size:22px;font-weight:700;color:#ffffff">Dobré ráno${firstName ? `, ${firstName}` : ""} 👋</div>
+        <div style="margin-top:2px;font-size:13px;color:#94a3b8;text-transform:capitalize">${day}</div>
+      </td></tr>
+      <tr><td style="padding:18px 22px 6px">
+        <div style="font-size:14px;color:#475467">Tvoje otevřené úkoly: <b style="color:#101828">${tasks.length}</b>${overdue ? ` · <span style="color:#dc2626;font-weight:600">${overdue} po termínu</span>` : ""}</div>
+      </td></tr>
+      <tr><td style="padding:6px 4px 4px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table></td></tr>
+      <tr><td style="padding:16px 22px 22px">
+        <a href="${loadConfig().APP_URL}/tasks" style="display:inline-block;background:#34d399;color:#08110c;font-weight:700;font-size:14px;text-decoration:none;padding:10px 18px;border-radius:10px">Otevřít úkoly →</a>
+        <div style="margin-top:14px;font-size:11px;color:#98a2b3">Posíláš si sám sobě z revai CRM · jen tvé přiřazené úkoly.</div>
+      </td></tr>
+    </table></div>`;
+
+  return { subject: `revai CRM — ranní souhrn (${tasks.length} úkolů${overdue ? `, ${overdue} po termínu` : ""})`, html };
+}
+
 /**
  * Ranní souhrn „co je potřeba udělat" — PERSONALIZOVANÝ e-mail: každý člen týmu dostane
  * jen SVÉ otevřené úkoly (přiřazené jemu). Uživatelé bez otevřených úkolů e-mail nedostávají
  * (tím pádem ani seed/servisní účty typu info@ nebo nepoužívané účty se 0 úkoly nespamujeme).
+ * onlyEmail: když je zadán, pošle jen tomuto příjemci (pro ruční přeposlání).
  */
-export async function runMorningSummary(now = new Date()): Promise<{ sent: number }> {
+export async function runMorningSummary(now = new Date(), onlyEmail?: string): Promise<{ sent: number }> {
   let sent = 0;
   await forEachWorkspace("morning-summary", async () => {
     const users = await securityRepository.listUsersWithRoles();
-    const recipients = users.filter((u) => u.status === "active" && u.email);
+    let recipients = users.filter((u) => u.status === "active" && u.email);
+    if (onlyEmail) recipients = recipients.filter((u) => u.email.toLowerCase() === onlyEmail.toLowerCase());
     if (!recipients.length) return;
 
-    const day = now.toLocaleDateString("cs-CZ", { weekday: "long", day: "numeric", month: "long" });
     const email = resolveEmailProvider();
-    const dayEnd = new Date(now); dayEnd.setHours(23, 59, 59, 999);
-
     for (const u of recipients) {
       const myTasks = await reportingService.myOpenTasks(u.id, now);
       if (!myTasks.length) continue; // žádné úkoly → žádný e-mail (nespamovat prázdné/servisní účty)
-
-      const overdueCount = myTasks.filter((t) => t.dueAt && new Date(t.dueAt) < now).length;
-      const list = "<ul style=\"padding-left:18px\">" + myTasks.map((t) => {
-        const over = t.dueAt && new Date(t.dueAt) < now;
-        const dueTxt = t.dueAt ? ` — <span style="color:${over ? "#dc2626" : "#666"}">do ${new Date(t.dueAt).toLocaleDateString("cs-CZ")}${over ? " (po termínu)" : ""}</span>` : "";
-        return `<li>${escapeHtml(t.title)}${dueTxt}</li>`;
-      }).join("") + "</ul>";
-      const firstName = escapeHtml((u.fullName || "").split(" ")[0] || "");
-      const html = `<div style="font-family:system-ui,sans-serif">
-        <h2>Dobré ráno${firstName ? `, ${firstName}` : ""} — ${day}</h2>
-        <h3>Tvoje otevřené úkoly (${myTasks.length})${overdueCount ? ` · ${overdueCount} po termínu` : ""}</h3>${list}
-        <p style="color:#888;font-size:12px">revai CRM · <a href="${loadConfig().APP_URL}/tasks">otevřít úkoly</a></p></div>`;
-
-      try { await email.send({ to: [u.email], subject: `revai CRM — ranní souhrn (${myTasks.length} úkolů)`, html }); sent++; }
+      const { subject, html } = renderMorningSummary(u.fullName, myTasks, now);
+      try { await email.send({ to: [u.email], subject, html }); sent++; }
       catch (err) { logger.warn("ranní souhrn selhal", { user: u.email, err: String(err) }); }
     }
   });

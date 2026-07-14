@@ -6,11 +6,13 @@ import { currentWorkspaceId } from "@/shared/tenant-context";
 import { clampLimit, type Page } from "@/shared/pagination";
 import { organizations } from "@/modules/organizations/organization.entity";
 import { projects } from "@/modules/projects/project.entity";
+import { taggings, tags as tagTable } from "@/shared/tags/tag.entity";
 import { tasks, type TaskRow } from "./task.entity";
 import type { TaskListFilter } from "./task.types";
 
-/** Úkol obohacený o viditelnou vazbu na klienta (přímo, nebo přes projekt) a název projektu. */
-export type TaskListRow = TaskRow & { clientId: string | null; clientName: string | null; projectName: string | null };
+export type TaskTag = { name: string; color: string | null };
+/** Úkol obohacený o viditelnou vazbu na klienta (přímo, nebo přes projekt), název projektu a štítky. */
+export type TaskListRow = TaskRow & { clientId: string | null; clientName: string | null; projectName: string | null; tags: TaskTag[] };
 
 export interface TaskInsertData {
   type: string; title: string; projectId?: string | null; organizationId?: string | null; phaseId?: string | null;
@@ -55,11 +57,21 @@ export const taskRepository = {
       .leftJoin(projects, eq(projects.id, tasks.projectId))
       .leftJoin(projOrg, eq(projOrg.id, projects.organizationId))
       .where(and(...conds)).orderBy(filter.view === "ticket_queue" ? tasks.dueAt : desc(tasks.createdAt)).limit(clampLimit(limit));
+    // štítky pro vrácené úkoly (jeden dotaz, seskupení v paměti)
+    const ids = rows.map((r) => r.task.id);
+    const tagsByTask = new Map<string, TaskTag[]>();
+    if (ids.length) {
+      const tg = await db().select({ entityId: taggings.entityId, name: tagTable.name, color: tagTable.color })
+        .from(taggings).innerJoin(tagTable, eq(tagTable.id, taggings.tagId))
+        .where(and(eq(taggings.workspaceId, ws), eq(taggings.entityType, "task"), inArray(taggings.entityId, ids), isNull(tagTable.deletedAt)));
+      for (const r of tg) { const l = tagsByTask.get(r.entityId) ?? []; l.push({ name: r.name, color: r.color }); tagsByTask.set(r.entityId, l); }
+    }
     const items: TaskListRow[] = rows.map((r) => ({
       ...r.task,
       clientId: r.task.organizationId ?? r.projectOrgId ?? null,
       clientName: r.orgName ?? r.projectOrgName ?? null,
       projectName: r.projectName ?? null,
+      tags: tagsByTask.get(r.task.id) ?? [],
     }));
     return { items, nextCursor: null };
   },

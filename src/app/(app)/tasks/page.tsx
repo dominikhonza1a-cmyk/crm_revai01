@@ -61,6 +61,10 @@ export default function TasksPage() {
                       {t.projectName && <span className="text-faint">· {t.projectName}</span>}
                       <span className="uppercase">{t.priority}</span>
                       {t.dueAt && <span>· do {new Date(t.dueAt).toLocaleDateString("cs-CZ")}</span>}
+                      {t.tags.map((tag, ti) => (
+                        <span key={ti} className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
+                          style={{ backgroundColor: `${tag.color ?? "#5b6670"}22`, color: tag.color ?? "#9aa4b2" }}>{tag.name}</span>
+                      ))}
                     </div>
                   </div>
                   <TaskStatusSelect taskId={t.id} status={t.status} />

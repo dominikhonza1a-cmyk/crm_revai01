@@ -1,4 +1,5 @@
 import { and, eq, isNull, sql, lt, ne, inArray, desc } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { db } from "@/shared/db";
 import { currentWorkspaceId } from "@/shared/tenant-context";
 import type { TenantContext } from "@/shared";
@@ -170,15 +171,26 @@ export const reportingService = {
       .orderBy(tasks.dueAt).limit(8);
   },
 
-  /** Otevřené úkoly konkrétního uživatele (přiřazené jemu) — pro personalizovaný ranní souhrn. */
-  async myOpenTasks(userId: string, now = new Date()) {
+  /** Otevřené úkoly konkrétního uživatele (přiřazené jemu) — pro personalizovaný ranní souhrn.
+   *  Obohaceno o klienta (přímo nebo přes projekt), název projektu a popis (stručný detail). */
+  async myOpenTasks(userId: string, _now = new Date()) {
     const ws = currentWorkspaceId();
-    const dayEnd = new Date(now); dayEnd.setHours(23, 59, 59, 999);
-    return db().select({ id: tasks.id, title: tasks.title, dueAt: tasks.dueAt, priority: tasks.priority, type: tasks.type })
-      .from(tasks)
+    const projOrg = alias(organizations, "my_task_proj_org");
+    const rows = await db().select({
+      id: tasks.id, title: tasks.title, dueAt: tasks.dueAt, priority: tasks.priority, type: tasks.type,
+      description: tasks.description, orgName: organizations.name, projName: projects.name, projOrgName: projOrg.name,
+    }).from(tasks)
+      .leftJoin(organizations, eq(organizations.id, tasks.organizationId))
+      .leftJoin(projects, eq(projects.id, tasks.projectId))
+      .leftJoin(projOrg, eq(projOrg.id, projects.organizationId))
       .where(and(eq(tasks.workspaceId, ws), isNull(tasks.deletedAt), eq(tasks.assigneeId, userId),
         inArray(tasks.status, ["todo", "in_progress", "blocked", "waiting_on_client"])))
       .orderBy(sql`${tasks.dueAt} asc nulls last`).limit(20);
+    return rows.map((r) => ({
+      id: r.id, title: r.title, dueAt: r.dueAt, priority: r.priority, type: r.type,
+      description: r.description ?? null,
+      clientName: r.orgName ?? r.projOrgName ?? null, projectName: r.projName ?? null,
+    }));
   },
 
   /** Otevřené úkoly — per-řešitel: moje úkoly + zatím nepřiřazené (společný backlog). */
