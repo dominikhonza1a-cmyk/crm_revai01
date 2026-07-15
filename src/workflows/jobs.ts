@@ -197,29 +197,62 @@ const GREETING_BY_EMAIL: Record<string, string> = {
   "j.rehberger@automatizace-ai.cz": "Honzo",
 };
 
-/** Sestaví jeden e-mail ranního souhrnu (značkový vizuál, u každého úkolu klient + stručný detail). */
+const czDate = (d: Date) => d.toLocaleDateString("cs-CZ");
+const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+/** Konec aktuálního týdne = nejbližší neděle 23:59 (týden pondělí–neděle). */
+const endOfWeekSunday = (d: Date) => { const x = new Date(d); x.setDate(x.getDate() + ((7 - x.getDay()) % 7)); x.setHours(23, 59, 59, 999); return x; };
+
+/** Rozdělí úkoly na: po termínu (nesplněné), tento týden (dnes→neděle), bez termínu. Budoucí týdny vynechá. */
+export function weekBuckets(tasks: SummaryTask[], now: Date) {
+  const sod = startOfDay(now), eow = endOfWeekSunday(now);
+  const overdue: SummaryTask[] = [], thisWeek: SummaryTask[] = [], noDue: SummaryTask[] = [];
+  for (const t of tasks) {
+    if (!t.dueAt) { noDue.push(t); continue; }
+    const d = new Date(t.dueAt);
+    if (d < sod) overdue.push(t);
+    else if (d <= eow) thisWeek.push(t);
+    // dueAt > konec týdne → mimo tento souhrn (příště v jeho týdnu)
+  }
+  return { overdue, thisWeek, noDue, weekEnd: eow };
+}
+
+function renderTaskRow(t: SummaryTask, now: Date): string {
+  const over = !!(t.dueAt && new Date(t.dueAt) < startOfDay(now));
+  const due = t.dueAt
+    ? `<span style="display:inline-block;font-size:12px;font-weight:600;color:${over ? "#dc2626" : "#0f9d6b"}">${over ? "⚠ po termínu · " : ""}do ${czDate(new Date(t.dueAt))}</span>`
+    : `<span style="font-size:12px;color:#9aa4b2">bez termínu</span>`;
+  const client = t.clientName
+    ? `<span style="display:inline-block;padding:1px 8px;border-radius:999px;background:#0f9d6b1a;color:#0f9d6b;font-size:12px;font-weight:600">${escapeHtml(t.clientName)}</span>`
+    : `<span style="display:inline-block;padding:1px 8px;border-radius:999px;background:#6b72801a;color:#98a2b3;font-size:12px">bez klienta</span>`;
+  const project = t.projectName ? `<span style="font-size:12px;color:#98a2b3">${escapeHtml(t.projectName)}</span>` : "";
+  const detail = t.description ? `<div style="margin-top:4px;font-size:13px;color:#667085;line-height:1.4">${escapeHtml(t.description.replace(/\s+/g, " ").trim()).slice(0, 140)}</div>` : "";
+  const meta = [client, project, `<span style="font-size:12px;color:#98a2b3">${PRIORITY_LABEL[t.priority] ?? t.priority.toUpperCase()}</span>`, due].filter(Boolean).join('<span style="color:#d0d5dd"> · </span>');
+  return `<tr><td style="padding:14px 18px;border-top:1px solid #eaecf0">
+    <div style="font-size:15px;font-weight:600;color:#101828">${escapeHtml(t.title)}</div>
+    <div style="margin-top:6px">${meta}</div>${detail}
+  </td></tr>`;
+}
+
+/** Sekce se záhlavím (barevný nadpis + volitelná poznámka + řádky úkolů). */
+function renderSection(title: string, list: SummaryTask[], now: Date, color: string, note?: string): string {
+  if (!list.length) return "";
+  return `<tr><td style="padding:16px 22px 2px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${color}">${title}</td></tr>
+    ${note ? `<tr><td style="padding:0 22px 4px;font-size:12px;color:#98a2b3">${note}</td></tr>` : ""}
+    <tr><td style="padding:2px 4px 4px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${list.map((t) => renderTaskRow(t, now)).join("")}</table></td></tr>`;
+}
+
+/** Sestaví jeden e-mail ranního souhrnu — jen aktuální týden (po–ne) + upozornění na nesplněné. */
 export function renderMorningSummary(email: string, fullName: string, tasks: SummaryTask[], now: Date): { subject: string; html: string } {
   const day = now.toLocaleDateString("cs-CZ", { weekday: "long", day: "numeric", month: "long" });
-  const overdue = tasks.filter((t) => t.dueAt && new Date(t.dueAt) < now).length;
+  const { overdue, thisWeek, noDue, weekEnd } = weekBuckets(tasks, now);
+  const weekTotal = overdue.length + thisWeek.length;
   // oslovení: přednostně mapa (5. pád/přezdívka), jinak křestní jméno v 1. pádě
   const greeting = escapeHtml(GREETING_BY_EMAIL[email.toLowerCase()] ?? (fullName || "").split(" ")[0] ?? "");
 
-  const rows = tasks.map((t) => {
-    const over = !!(t.dueAt && new Date(t.dueAt) < now);
-    const due = t.dueAt
-      ? `<span style="display:inline-block;font-size:12px;font-weight:600;color:${over ? "#dc2626" : "#0f9d6b"}">${over ? "⚠ po termínu · " : ""}do ${new Date(t.dueAt).toLocaleDateString("cs-CZ")}</span>`
-      : `<span style="font-size:12px;color:#9aa4b2">bez termínu</span>`;
-    const client = t.clientName
-      ? `<span style="display:inline-block;padding:1px 8px;border-radius:999px;background:#0f9d6b1a;color:#0f9d6b;font-size:12px;font-weight:600">${escapeHtml(t.clientName)}</span>`
-      : `<span style="display:inline-block;padding:1px 8px;border-radius:999px;background:#6b72801a;color:#98a2b3;font-size:12px">bez klienta</span>`;
-    const project = t.projectName ? `<span style="font-size:12px;color:#98a2b3">${escapeHtml(t.projectName)}</span>` : "";
-    const detail = t.description ? `<div style="margin-top:4px;font-size:13px;color:#667085;line-height:1.4">${escapeHtml(t.description.replace(/\s+/g, " ").trim()).slice(0, 140)}</div>` : "";
-    const meta = [client, project, `<span style="font-size:12px;color:#98a2b3">${PRIORITY_LABEL[t.priority] ?? t.priority.toUpperCase()}</span>`, due].filter(Boolean).join('<span style="color:#d0d5dd"> · </span>');
-    return `<tr><td style="padding:14px 18px;border-top:1px solid #eaecf0">
-      <div style="font-size:15px;font-weight:600;color:#101828">${escapeHtml(t.title)}</div>
-      <div style="margin-top:6px">${meta}</div>${detail}
-    </td></tr>`;
-  }).join("");
+  const rows =
+    renderSection("⚠ Nesplněné (po termínu)", overdue, now, "#dc2626", "Nedokončené ani neoznačené úkoly z tohoto i minulého týdne — dokonči je, nebo přehoď termín.") +
+    renderSection(`Tento týden — do neděle ${czDate(weekEnd)}`, thisWeek, now, "#0f9d6b") +
+    renderSection("Bez termínu (kdykoliv)", noDue, now, "#98a2b3");
 
   const html = `<div style="margin:0;padding:24px 12px;background:#f2f4f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #eaecf0">
@@ -229,16 +262,16 @@ export function renderMorningSummary(email: string, fullName: string, tasks: Sum
         <div style="margin-top:2px;font-size:13px;color:#94a3b8;text-transform:capitalize">${day}</div>
       </td></tr>
       <tr><td style="padding:18px 22px 6px">
-        <div style="font-size:14px;color:#475467">Tvoje otevřené úkoly: <b style="color:#101828">${tasks.length}</b>${overdue ? ` · <span style="color:#dc2626;font-weight:600">${overdue} po termínu</span>` : ""}</div>
+        <div style="font-size:14px;color:#475467">Tento týden tě čeká: <b style="color:#101828">${weekTotal}</b> úkol(ů)${overdue.length ? ` · <span style="color:#dc2626;font-weight:600">${overdue.length} nesplněných</span>` : ""}</div>
       </td></tr>
       <tr><td style="padding:6px 4px 4px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table></td></tr>
       <tr><td style="padding:16px 22px 22px">
         <a href="${loadConfig().APP_URL}/tasks" style="display:inline-block;background:#34d399;color:#08110c;font-weight:700;font-size:14px;text-decoration:none;padding:10px 18px;border-radius:10px">Otevřít úkoly →</a>
-        <div style="margin-top:14px;font-size:11px;color:#98a2b3">Posíláš si sám sobě z revai CRM · jen tvé přiřazené úkoly.</div>
+        <div style="margin-top:14px;font-size:11px;color:#98a2b3">Posíláš si sám sobě z revai CRM · jen tvé přiřazené úkoly · aktuální týden (po–ne).</div>
       </td></tr>
     </table></div>`;
 
-  return { subject: `revai CRM — ranní souhrn (${tasks.length} úkolů${overdue ? `, ${overdue} po termínu` : ""})`, html };
+  return { subject: `revai CRM — ranní souhrn (${weekTotal} tento týden${overdue.length ? `, ${overdue.length} po termínu` : ""})`, html };
 }
 
 /**
@@ -258,7 +291,8 @@ export async function runMorningSummary(now = new Date(), onlyEmail?: string): P
     const email = resolveEmailProvider();
     for (const u of recipients) {
       const myTasks = await reportingService.myOpenTasks(u.id, now);
-      if (!myTasks.length) continue; // žádné úkoly → žádný e-mail (nespamovat prázdné/servisní účty)
+      const { overdue, thisWeek } = weekBuckets(myTasks, now);
+      if (!overdue.length && !thisWeek.length) continue; // nic tento týden ani po termínu → neposílat (budoucí úkoly přijdou v jejich týdnu)
       const { subject, html } = renderMorningSummary(u.email, u.fullName, myTasks, now);
       try { await email.send({ to: [u.email], subject, html }); sent++; }
       catch (err) { logger.warn("ranní souhrn selhal", { user: u.email, err: String(err) }); }

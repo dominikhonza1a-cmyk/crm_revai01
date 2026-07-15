@@ -185,7 +185,7 @@ export const reportingService = {
       .leftJoin(projOrg, eq(projOrg.id, projects.organizationId))
       .where(and(eq(tasks.workspaceId, ws), isNull(tasks.deletedAt), eq(tasks.assigneeId, userId),
         inArray(tasks.status, ["todo", "in_progress", "blocked", "waiting_on_client"])))
-      .orderBy(sql`${tasks.dueAt} asc nulls last`).limit(20);
+      .orderBy(sql`${tasks.dueAt} asc nulls last`).limit(200);
     return rows.map((r) => ({
       id: r.id, title: r.title, dueAt: r.dueAt, priority: r.priority, type: r.type,
       description: r.description ?? null,

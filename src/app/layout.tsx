@@ -7,6 +7,7 @@ const inter = Inter({ subsets: ["latin", "latin-ext"], variable: "--font-inter",
 const bebas = Bebas_Neue({ weight: "400", subsets: ["latin", "latin-ext"], variable: "--font-bebas", display: "swap" });
 
 export const metadata = { title: "revai CRM", description: "Interní CRM pro AI automatizační agenturu" };
+export const viewport = { width: "device-width", initialScale: 1, themeColor: "#0b1220" };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

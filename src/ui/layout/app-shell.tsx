@@ -45,8 +45,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [email, setEmail] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);   // off-canvas sidebar na mobilu
   const [modal, setModal] = useState<null | "client" | "deal">(null);
   const [searchOpen, setSearchOpen] = useState(false);
+
+  // zavři mobilní menu při přechodu na jinou stránku
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   // Cmd/Ctrl+K → globální hledání
   useEffect(() => {
@@ -78,38 +82,48 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex h-screen bg-bg">
-      {/* Sidebar */}
-      <aside className={`${collapsed ? "w-16" : "w-60"} flex flex-col border-r border-line bg-surface transition-all duration-200`}>
+      {/* Ztmavení pozadí při otevřeném mobilním menu */}
+      {mobileOpen && <div className="fixed inset-0 z-30 bg-black/60 md:hidden" onClick={() => setMobileOpen(false)} aria-hidden />}
+
+      {/* Sidebar — na mobilu off-canvas drawer (skrytý, výsuvný), na md+ statický */}
+      <aside className={`fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-line bg-surface transition-transform duration-200
+        md:static md:z-auto md:translate-x-0 md:transition-all ${collapsed ? "md:w-16" : "md:w-60"}
+        ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
         <div className="flex h-16 items-center gap-2.5 px-4">
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent-strong font-display text-lg text-[#08110c]">R</div>
-          {!collapsed && <span className="font-display text-xl tracking-wider text-ink">REVAI CRM</span>}
+          <span className={`font-display text-xl tracking-wider text-ink ${collapsed ? "md:hidden" : ""}`}>REVAI CRM</span>
+          <button onClick={() => setMobileOpen(false)} className="ml-auto grid h-8 w-8 place-items-center rounded-lg text-faint hover:bg-white/5 hover:text-ink md:hidden" title="Zavřít menu">✕</button>
         </div>
-        <nav className="flex-1 space-y-1 px-2.5 py-2">
+        <nav className="flex-1 space-y-1 overflow-y-auto px-2.5 py-2">
           {NAV.map((n) => {
             const active = pathname?.startsWith(n.href);
             return (
-              <Link key={n.href} href={n.href} title={n.label}
+              <Link key={n.href} href={n.href} title={n.label} onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${active ? "bg-accent-soft text-accent" : "text-muted hover:bg-white/5 hover:text-ink"}`}>
                 <Icon name={n.icon} className={active ? "text-accent" : "text-faint"} />
-                {!collapsed && <span>{n.label}</span>}
+                <span className={collapsed ? "md:hidden" : ""}>{n.label}</span>
               </Link>
             );
           })}
         </nav>
-        <button onClick={toggle} className="m-2.5 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-faint hover:bg-white/5 hover:text-muted" title="Sbalit / rozbalit">
+        {/* Sbalit — jen na desktopu (na mobilu je drawer vždy plný) */}
+        <button onClick={toggle} className="m-2.5 hidden items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-faint hover:bg-white/5 hover:text-muted md:flex" title="Sbalit / rozbalit">
           <Icon name="menu" />
-          {!collapsed && <span>Sbalit</span>}
+          <span className={collapsed ? "md:hidden" : ""}>Sbalit</span>
         </button>
       </aside>
 
       {/* Main */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-line bg-surface/60 px-6">
-          <div className="flex items-center gap-2.5">
-            {active?.doodle && <img src={active.doodle} alt="" width={38} height={38} className="pointer-events-none select-none" />}
-            <h1 className="font-display text-2xl tracking-wider text-ink">{title}</h1>
+        <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-line bg-surface/60 px-4 md:px-6">
+          <div className="flex min-w-0 items-center gap-2 md:gap-2.5">
+            <button onClick={() => setMobileOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-muted hover:bg-white/5 hover:text-ink md:hidden" title="Menu">
+              <Icon name="menu" />
+            </button>
+            {active?.doodle && <img src={active.doodle} alt="" width={38} height={38} className="pointer-events-none hidden select-none sm:block" />}
+            <h1 className="truncate font-display text-xl tracking-wider text-ink md:text-2xl">{title}</h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex shrink-0 items-center gap-2 md:gap-4">
             <button onClick={() => setSearchOpen(true)} title="Hledat (⌘K)"
               className="flex items-center gap-2 rounded-xl border border-line px-3 py-2 text-sm text-faint transition-colors hover:border-accent/40 hover:text-muted">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="16" height="16">
@@ -140,7 +154,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
         </header>
-        <main className="flex-1 overflow-auto p-6">{children}</main>
+        <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
       </div>
 
       {modal === "client" && <NewClientModal onClose={() => setModal(null)} />}
