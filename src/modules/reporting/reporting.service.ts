@@ -14,6 +14,10 @@ import { czkRates, toCzkMinor } from "@/shared/fx";
  * Read-only agregace pro dashboard widgety. Jediný (spolu s GDPR joby), kdo smí číst i soft-deleted řádky
  * — zde ale čteme jen aktivní (deleted_at IS NULL). Těžké agregace → materializované pohledy (fáze 3).
  */
+/** „Aktivní" = úkoly, které reálně čekají na moji akci. waiting_on_client / blocked / done / canceled
+ *  se do dashboardu ani ranního souhrnu nepočítají (jsou vyřešené nebo míč na druhé straně). */
+const ACTIVE_TASK_STATUSES = ["todo", "in_progress"] as const;
+
 export const reportingService = {
   /**
    * Finanční přehled: historicky vyděláno (won dealy), měsíční retainery (aktivní retainer
@@ -130,12 +134,12 @@ export const reportingService = {
       .from(projects).where(and(eq(projects.workspaceId, ws), isNull(projects.deletedAt))).groupBy(projects.status);
   },
 
-  /** Počet overdue tasků (po termínu, neuzavřené). Per-řešitel: moje úkoly + zatím nepřiřazené. */
+  /** Počet overdue tasků (po termínu, aktivní). Per-řešitel: moje úkoly + zatím nepřiřazené. */
   async overdueTasks(userId?: string | null) {
     const ws = currentWorkspaceId();
     const r = (await db().select({ n: sql<number>`count(*)::int` }).from(tasks)
       .where(and(eq(tasks.workspaceId, ws), isNull(tasks.deletedAt), lt(tasks.dueAt, new Date()),
-        inArray(tasks.status, ["todo", "in_progress", "blocked", "waiting_on_client"]), assignedToMeOrNull(userId))))[0];
+        inArray(tasks.status, [...ACTIVE_TASK_STATUSES]), assignedToMeOrNull(userId))))[0];
     return { count: r?.n ?? 0 };
   },
 
@@ -167,7 +171,7 @@ export const reportingService = {
     return db().select({ id: tasks.id, title: tasks.title, dueAt: tasks.dueAt, priority: tasks.priority, type: tasks.type })
       .from(tasks)
       .where(and(eq(tasks.workspaceId, ws), isNull(tasks.deletedAt),
-        sql`${tasks.status} not in ('done','canceled')`, sql`${tasks.dueAt} is not null`, lt(tasks.dueAt, dayEnd), assignedToMeOrNull(userId)))
+        inArray(tasks.status, [...ACTIVE_TASK_STATUSES]), sql`${tasks.dueAt} is not null`, lt(tasks.dueAt, dayEnd), assignedToMeOrNull(userId)))
       .orderBy(tasks.dueAt).limit(8);
   },
 
@@ -184,7 +188,7 @@ export const reportingService = {
       .leftJoin(projects, eq(projects.id, tasks.projectId))
       .leftJoin(projOrg, eq(projOrg.id, projects.organizationId))
       .where(and(eq(tasks.workspaceId, ws), isNull(tasks.deletedAt), eq(tasks.assigneeId, userId),
-        inArray(tasks.status, ["todo", "in_progress", "blocked", "waiting_on_client"])))
+        inArray(tasks.status, [...ACTIVE_TASK_STATUSES])))
       .orderBy(sql`${tasks.dueAt} asc nulls last`).limit(200);
     return rows.map((r) => ({
       id: r.id, title: r.title, dueAt: r.dueAt, priority: r.priority, type: r.type,
@@ -193,12 +197,13 @@ export const reportingService = {
     }));
   },
 
-  /** Otevřené úkoly — per-řešitel: moje úkoly + zatím nepřiřazené (společný backlog). */
+  /** Otevřené úkoly — aktivní (todo + rozpracované), per-řešitel: moje + zatím nepřiřazené.
+   *  waiting_on_client / blocked / done se nepočítají → změna stavu se hned projeví na dashboardu. */
   async openTasks(userId?: string | null) {
     const ws = currentWorkspaceId();
     const r = (await db().select({ n: sql<number>`count(*)::int` }).from(tasks)
       .where(and(eq(tasks.workspaceId, ws), isNull(tasks.deletedAt),
-        inArray(tasks.status, ["todo", "in_progress", "blocked", "waiting_on_client"]), assignedToMeOrNull(userId))))[0];
+        inArray(tasks.status, [...ACTIVE_TASK_STATUSES]), assignedToMeOrNull(userId))))[0];
     return { count: r?.n ?? 0 };
   },
 

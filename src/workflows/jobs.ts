@@ -288,11 +288,15 @@ export async function runMorningSummary(now = new Date(), onlyEmail?: string): P
     if (onlyEmail) recipients = recipients.filter((u) => u.email.toLowerCase() === onlyEmail.toLowerCase());
     if (!recipients.length) return;
 
+    // Pondělí = začátek týdne → přehled celého týdne. Ostatní dny → jen když něco visí po termínu
+    // (nesplněný úkol z dřívějška v tomto týdnu). Jindy e-mail na toto téma nechodí.
+    const isWeekStart = now.getDay() === 1; // 1 = pondělí
     const email = resolveEmailProvider();
     for (const u of recipients) {
       const myTasks = await reportingService.myOpenTasks(u.id, now);
       const { overdue, thisWeek } = weekBuckets(myTasks, now);
-      if (!overdue.length && !thisWeek.length) continue; // nic tento týden ani po termínu → neposílat (budoucí úkoly přijdou v jejich týdnu)
+      const shouldSend = isWeekStart ? (overdue.length + thisWeek.length > 0) : (overdue.length > 0);
+      if (!shouldSend) continue;
       const { subject, html } = renderMorningSummary(u.email, u.fullName, myTasks, now);
       try { await email.send({ to: [u.email], subject, html }); sent++; }
       catch (err) { logger.warn("ranní souhrn selhal", { user: u.email, err: String(err) }); }
